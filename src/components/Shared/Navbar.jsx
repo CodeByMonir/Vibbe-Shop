@@ -17,7 +17,7 @@ export default function Navbar() {
         { name: "Favorites", href: "/favorites", icon: Heart },
         { name: "Cart", href: "/cart", icon: ShoppingBag, badge: 2 },
         {
-            name: isSignedIn ? "Profile" : "Sign In",
+            name: isSignedIn ? "Profile" : "",
             href: isSignedIn ? "/profile" : "/signin",
             icon: User,
         },
@@ -30,7 +30,7 @@ export default function Navbar() {
 
                     {/* Left: Brand Identity & Moto */}
                     <div className="flex items-center gap-3">
-                        <Link href="/" className="flex items-center gap-2.5 group">
+                        <Link href="/" className="flex items-center gap-1.5 group">
                             <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0">
                                 <Image
                                     src="/vibbeLogo.png"
@@ -57,11 +57,11 @@ export default function Navbar() {
                                     href={item.href}
                                     className="relative flex items-center gap-2 px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-[#444444] hover:text-[#000000] transition-colors rounded-none focus-visible:outline-2 focus-visible:outline-[#000000] focus-visible:outline-offset-2"
                                 >
-                                    <Icon className="w-4 h-4 text-[#333333]" />
-                                    <span>{item.name}</span>
+                                    <Icon className="w-6 h-6 text-[#333333]" />
+                                    
 
                                     {item.badge && (
-                                        <span className="ml-0.5 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-[#000000] rounded-full">
+                                        <span className="absolute top-1 right-1 w-4 h-4 text-[9px] font-bold text-white bg-[#000000] rounded-full flex items-center justify-center">
                                             {item.badge}
                                         </span>
                                     )}
