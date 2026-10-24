@@ -16,10 +16,14 @@ import {
 import { useStore } from "@/components/context/StoreContext";
 import { useFetch } from "@/components/hooks/useFetch";
 
+
 export default function SearchPage() {
   const { addToCart, toggleFavorite, isFavorite } = useStore();
 
+  // const url = "/public/data/products.json"
+
   // Using the reusable fetch hook with a 3-attempt ceiling
+  
   const {
     data: rawProducts,
     loading,
@@ -27,6 +31,7 @@ export default function SearchPage() {
     retryCount,
     refetch,
   } = useFetch("/data/products.json", { maxRetries: 3, retryDelay: 1000 });
+
 
   const products = useMemo(() => {
     return Array.isArray(rawProducts) ? rawProducts : [];
