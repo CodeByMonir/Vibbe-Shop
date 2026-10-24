@@ -53,7 +53,7 @@ const DISPLAY_CATEGORIES = [...CATEGORIES, ...CATEGORIES, ...CATEGORIES];
 
 export default function ShopByCategory() {
   const sliderRef = useRef(null);
-  const [isMouseDown, setIsMouseDown] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeftState, setScrollLeftState] = useState(0);
   const [hasMoved, setHasMoved] = useState(false);
@@ -65,20 +65,20 @@ export default function ShopByCategory() {
     }
   }, []);
 
-  const handleMouseDown = (e) => {
-    setIsMouseDown(true);
+  // Shared drag start logic for Mouse & Touch
+  const handleDragStart = (clientX) => {
+    if (!sliderRef.current) return;
+    setIsDragging(true);
     setHasMoved(false);
-    // Track exact screen coordinates
-    setStartX(e.clientX);
+    setStartX(clientX);
     setScrollLeftState(sliderRef.current.scrollLeft);
   };
 
-  const handleMouseMove = (e) => {
-    if (!isMouseDown || !sliderRef.current) return;
-    e.preventDefault();
+  // Shared drag move logic for Mouse & Touch
+  const handleDragMove = (clientX) => {
+    if (!isDragging || !sliderRef.current) return;
 
-    // Exact 1:1 pixel difference
-    const deltaX = e.clientX - startX;
+    const deltaX = clientX - startX;
 
     if (Math.abs(deltaX) > 4) {
       setHasMoved(true);
@@ -91,19 +91,39 @@ export default function ShopByCategory() {
     // Infinite loop wrap boundary
     if (nextScrollLeft >= singleSetWidth * 2) {
       nextScrollLeft -= singleSetWidth;
-      setStartX(e.clientX);
+      setStartX(clientX);
       setScrollLeftState(nextScrollLeft);
     } else if (nextScrollLeft <= 0) {
       nextScrollLeft += singleSetWidth;
-      setStartX(e.clientX);
+      setStartX(clientX);
       setScrollLeftState(nextScrollLeft);
     }
 
     el.scrollLeft = nextScrollLeft;
   };
 
-  const handleMouseUpOrLeave = () => {
-    setIsMouseDown(false);
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Mouse Handlers
+  const handleMouseDown = (e) => handleDragStart(e.clientX);
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    handleDragMove(e.clientX);
+  };
+
+  // Touch Handlers for Mobile Phones
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      handleDragStart(e.touches[0].clientX);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    handleDragMove(e.touches[0].clientX);
   };
 
   const handleLinkClick = (e) => {
@@ -127,14 +147,17 @@ export default function ShopByCategory() {
           <div className="w-40 sm:w-52 h-[3px] bg-[#d95338] mt-3" />
         </div>
 
-        {/* 1:1 Hand Pointer Slider Track */}
+        {/* 1:1 Hand Pointer / Touch Slider Track */}
         <div
           ref={sliderRef}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUpOrLeave}
-          onMouseLeave={handleMouseUpOrLeave}
-          className="flex items-start gap-8 sm:gap-14 overflow-hidden cursor-pointer"
+          onMouseUp={handleDragEnd}
+          onMouseLeave={handleDragEnd}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleDragEnd}
+          className="flex items-start gap-8 sm:gap-14 overflow-hidden cursor-grab active:cursor-grabbing touch-pan-y"
         >
           {DISPLAY_CATEGORIES.map((cat, index) => (
             <Link
@@ -142,7 +165,7 @@ export default function ShopByCategory() {
               href={cat.href}
               onClick={handleLinkClick}
               draggable={false}
-              className="flex-shrink-0 flex flex-col items-center w-[170px] sm:w-[220px] cursor-pointer"
+              className="flex-shrink-0 flex flex-col items-center w-[170px] sm:w-[220px]"
             >
               {/* Category Title + Badge */}
               <div className="flex items-center justify-center gap-2 mb-4 h-7">
