@@ -1,382 +1,199 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Trash2,
-  Minus,
-  Plus,
-  ArrowRight,
-  ShoppingBag,
-  ShieldCheck,
-  Truck,
-  RotateCcw,
-} from "lucide-react";
+import { Heart, ShoppingBag, ArrowRight } from "lucide-react";
 import { useStore } from "@/components/context/StoreContext";
+import { useFetch } from "@/components/hooks/useFetch";
 
-const FREE_SHIPPING_THRESHOLD = 1500; // Free shipping threshold in BDT (৳)
+export default function CategoryShowcase({ initialCategories = [] }) {
+  const store = useStore();
+  const { addToCart, toggleFavorite, isFavorite } = store;
 
-export default function CartPage() {
-  const { cart, removeFromCart, updateCartQuantity, clearCart } = useStore();
-  const [mounted, setMounted] = useState(false);
+  // Use products from StoreContext if exposed, otherwise fetch with useFetch fallback
+  const { data: fetchedProducts, loading } = useFetch("/data/products.json", {
+    maxRetries: 3,
+  });
 
-  const [deliveryArea, setDeliveryArea] = useState("dhaka"); // 'dhaka' (৳70) or 'outside' (৳130)
-  const [couponCode, setCouponCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState(0); // in percent
-  const [couponError, setCouponError] = useState("");
-  const [couponSuccess, setCouponSuccess] = useState("");
-
-  // Prevent SSR hydration mismatch when reading localStorage state
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const displayedCart = mounted ? cart : [];
-
-  // Subtotal Calculation
-  const subtotal = useMemo(() => {
-    return displayedCart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  }, [displayedCart]);
-
-  // Discount Calculation
-  const discountAmount = useMemo(() => {
-    return Math.round((subtotal * appliedDiscount) / 100);
-  }, [subtotal, appliedDiscount]);
-
-  // Shipping Calculation
-  const shippingCost = useMemo(() => {
-    if (displayedCart.length === 0) return 0;
-    if (subtotal >= FREE_SHIPPING_THRESHOLD) return 0;
-    return deliveryArea === "dhaka" ? 70 : 130;
-  }, [subtotal, deliveryArea, displayedCart.length]);
-
-  // Total
-  const total = useMemo(() => {
-    return Math.max(0, subtotal - discountAmount + shippingCost);
-  }, [subtotal, discountAmount, shippingCost]);
-
-  // Free shipping progress meter
-  const progressToFreeShipping = Math.min(
-    100,
-    Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100)
-  );
-  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-
-  // Promo Code Handler
-  const handleApplyCoupon = (e) => {
-    e.preventDefault();
-    setCouponError("");
-    setCouponSuccess("");
-
-    if (couponCode.trim().toUpperCase() === "VIBBE10") {
-      setAppliedDiscount(10);
-      setCouponSuccess("10% promotional discount applied!");
-    } else {
-      setCouponError("Invalid coupon code. Try 'VIBBE10'");
+  const products = useMemo(() => {
+    if (Array.isArray(store.products) && store.products.length > 0) {
+      return store.products;
     }
-  };
+    return Array.isArray(fetchedProducts) ? fetchedProducts : [];
+  }, [store.products, fetchedProducts]);
+
+  // Group products by category
+  const groupedProducts = useMemo(() => {
+    const groups = {};
+
+    products.forEach((product) => {
+      const category = product.category || "Uncategorized";
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(product);
+    });
+
+    // If specific categories requested, filter and preserve order
+    if (initialCategories.length > 0) {
+      const filtered = {};
+      initialCategories.forEach((cat) => {
+        if (groups[cat]) filtered[cat] = groups[cat];
+      });
+      return filtered;
+    }
+
+    return groups;
+  }, [products, initialCategories]);
+
+  if (loading && products.length === 0) {
+    return (
+      <div className="py-24 text-center">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#9ca3af]">
+          Loading curated collections...
+        </p>
+      </div>
+    );
+  }
+
+  const categoryEntries = Object.entries(groupedProducts);
+
+  if (categoryEntries.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-[#ffffff] text-[#111827] font-sans selection:bg-[#000000] selection:text-white">
-      {/* Header Banner */}
-      <div className="border-b border-[#e5e7eb] bg-[#fafafa]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
-            <div>
-              <h1 className="text-2xl sm:text-4xl font-black uppercase tracking-tight text-[#000000]">
-                Shopping Bag
-              </h1>
-              <p className="text-xs sm:text-sm text-[#444444] mt-1.5">
-                Review your items and proceed to secure checkout.
-              </p>
-            </div>
-            <span className="text-xs font-semibold uppercase tracking-widest text-[#444444]">
-              {displayedCart.reduce((acc, item) => acc + item.quantity, 0)} Items
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {displayedCart.length === 0 ? (
-          /* Empty Bag State */
-          <div className="py-20 text-center flex flex-col items-center justify-center border border-dashed border-[#e5e7eb] px-4">
-            <div className="w-14 h-14 rounded-full bg-[#f4f4f5] flex items-center justify-center mb-4">
-              <ShoppingBag className="w-6 h-6 text-[#9ca3af]" />
-            </div>
-            <h2 className="text-base font-bold uppercase tracking-wider text-[#000000]">
-              Your bag is currently empty
-            </h2>
-            <p className="text-xs text-[#444444] mt-1 max-w-sm">
-              Discover modern street tailoring, heavyweight tees, and utilitarian outerwear crafted for everyday wear.
-            </p>
-            <Link
-              href="/search"
-              className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#222222] transition-colors"
-            >
-              <span>Explore Collection</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-
-            {/* Left Column: Cart Items List */}
-            <div className="lg:col-span-8 flex flex-col gap-6">
-
-              {/* Free Shipping Tracker */}
-              <div className="p-4 bg-[#fafafa] border border-[#e5e7eb]">
-                <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="font-bold text-[#000000] uppercase tracking-wider">
-                    {subtotal >= FREE_SHIPPING_THRESHOLD
-                      ? "✓ You have unlocked free delivery nationwide"
-                      : `Add ৳${remainingForFreeShipping.toLocaleString()} more to unlock free shipping`}
-                  </span>
-                  <span className="font-semibold text-[#444444]">{progressToFreeShipping}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-[#e5e7eb] overflow-hidden">
-                  <div
-                    className="h-full bg-[#000000] transition-all duration-300"
-                    style={{ width: `${progressToFreeShipping}%` }}
-                  />
-                </div>
+    <div className="w-full bg-[#ffffff] py-10 sm:py-16 selection:bg-[#000000] selection:text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 sm:space-y-24">
+        {categoryEntries.map(([categoryName, items]) => (
+          <section key={categoryName} className="flex flex-col">
+            {/* Category Section Header */}
+            <div className="flex items-end justify-between pb-4 border-b border-[#e5e7eb] mb-6 sm:mb-8">
+              <div>
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#9ca3af]">
+                  Collection
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-[#000000] mt-0.5">
+                  {categoryName}
+                </h2>
               </div>
 
-              {/* Items List */}
-              <div className="border-t border-[#e5e7eb] divide-y divide-[#e5e7eb]">
-                {displayedCart.map((item) => (
-                  <div key={`${item.id}-${item.size}`} className="py-6 flex gap-4 sm:gap-6">
-                    {/* Item Image */}
-                    <div className="relative aspect-[3/4] w-24 sm:w-28 bg-[#f4f4f5] shrink-0 overflow-hidden">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        sizes="112px"
-                        className="object-cover object-center"
-                      />
+              <Link
+                href={`/search?category=${encodeURIComponent(categoryName)}`}
+                className="group flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#000000] hover:text-[#d95338] transition-colors"
+              >
+                <span>View All ({items.length})</span>
+                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
+
+            {/* Product Grid (up to 4 items preview per category) */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10">
+              {items.slice(0, 4).map((product) => {
+                const favoriteActive = isFavorite(product.id);
+
+                return (
+                  <div key={product.id} className="group flex flex-col">
+                    {/* Image Block with Direct Link */}
+                    <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden mb-3">
+                      <Link
+                        href={`/products/${product.id}`}
+                        className="block w-full h-full relative"
+                      >
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                        />
+                      </Link>
+
+                      {/* Badges */}
+                      {product.badge && (
+                        <span className="absolute top-2.5 left-2.5 pointer-events-none bg-[#000000] text-white text-[9px] font-bold uppercase px-2 py-0.5 tracking-wider">
+                          {product.badge}
+                        </span>
+                      )}
+
+                      {/* Wishlist Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleFavorite(product);
+                        }}
+                        aria-label={
+                          favoriteActive
+                            ? "Remove from wishlist"
+                            : "Add to wishlist"
+                        }
+                        className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center transition-colors shadow-sm ${favoriteActive
+                            ? "text-[#d95338]"
+                            : "text-[#111111] hover:text-[#d95338]"
+                          }`}
+                      >
+                        <Heart
+                          className={`w-4 h-4 ${favoriteActive ? "fill-current" : ""
+                            }`}
+                        />
+                      </button>
+
+                      {/* Quick Add To Bag Overlay */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          addToCart(product);
+                        }}
+                        className="hidden sm:flex absolute inset-x-0 bottom-0 h-10 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-200 cursor-pointer hover:bg-[#222222]"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                        <span>Quick Add</span>
+                      </button>
                     </div>
 
-                    {/* Metadata & Actions */}
-                    <div className="flex flex-col justify-between flex-1 min-w-0">
+                    {/* Metadata & Title Link */}
+                    <div className="flex flex-col flex-1 justify-between gap-2">
                       <div>
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase text-[#9ca3af] tracking-wider block">
-                              {item.category}
-                            </span>
-                            <Link
-                              href={`/products/${item.id}`}
-                              className="text-xs sm:text-sm font-bold uppercase text-[#000000] tracking-wide hover:underline line-clamp-1 mt-0.5"
-                            >
-                              {item.name}
-                            </Link>
-                          </div>
-                          <button
-                            onClick={() => removeFromCart(item.id, item.size)}
-                            aria-label="Remove item"
-                            className="text-[#9ca3af] hover:text-[#d95338] transition-colors p-1"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {/* Variants */}
-                        <div className="flex items-center gap-3 mt-2 text-xs text-[#444444]">
-                          <span className="border border-[#e5e7eb] px-2 py-0.5 font-semibold text-[#111111]">
-                            Size: {item.size}
-                          </span>
-                          <span>{item.color}</span>
-                        </div>
+                        <Link
+                          href={`/products/${product.id}`}
+                          className="text-xs font-bold text-[#111111] uppercase tracking-wide hover:underline line-clamp-1 block"
+                        >
+                          {product.name}
+                        </Link>
                       </div>
 
-                      {/* Quantity Controller & Total Item Price */}
-                      <div className="flex items-center justify-between mt-4 pt-2">
-                        <div className="flex items-center border border-[#e5e7eb] h-8">
-                          <button
-                            onClick={() => updateCartQuantity(item.id, item.size, -1)}
-                            aria-label="Decrease quantity"
-                            className="w-8 h-full flex items-center justify-center text-[#111111] hover:bg-[#fafafa] transition-colors disabled:opacity-40"
-                            disabled={item.quantity <= 1}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-9 text-center text-xs font-bold text-[#000000]">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() => updateCartQuantity(item.id, item.size, 1)}
-                            aria-label="Increase quantity"
-                            className="w-8 h-full flex items-center justify-center text-[#111111] hover:bg-[#fafafa] transition-colors"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        <div className="text-right">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
                           <span className="text-sm font-black text-[#000000]">
-                            ৳{(item.price * item.quantity).toLocaleString()}
+                            ৳{product.price.toLocaleString()}
                           </span>
-                          {item.quantity > 1 && (
-                            <span className="block text-[10px] text-[#9ca3af]">
-                              ৳{item.price.toLocaleString()} each
+                          {product.originalPrice && (
+                            <span className="text-xs text-[#9ca3af] line-through">
+                              ৳{product.originalPrice.toLocaleString()}
                             </span>
                           )}
                         </div>
+
+                        {/* Mobile Add-To-Bag Quick Button */}
+                        <button
+                          type="button"
+                          onClick={() => addToCart(product)}
+                          aria-label="Add to cart"
+                          className="sm:hidden p-1.5 border border-[#e5e7eb] hover:border-[#000000] text-[#000000] transition-colors"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Clear Bag Option */}
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={clearCart}
-                  className="text-xs font-bold uppercase tracking-wider text-[#d95338] underline underline-offset-4 hover:opacity-80 transition-opacity"
-                >
-                  Clear Bag
-                </button>
-              </div>
-
-              {/* Trust Badges */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-[#e5e7eb]">
-                <div className="flex items-center gap-2.5 text-xs text-[#444444]">
-                  <Truck className="w-4 h-4 text-[#000000] shrink-0" />
-                  <span>Pan-Bangladesh Fast Shipping</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-xs text-[#444444]">
-                  <RotateCcw className="w-4 h-4 text-[#000000] shrink-0" />
-                  <span>7-Day Easy Doorstep Exchange</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-xs text-[#444444]">
-                  <ShieldCheck className="w-4 h-4 text-[#000000] shrink-0" />
-                  <span>100% Genuine Certified Fabrics</span>
-                </div>
-              </div>
-
+                );
+              })}
             </div>
-
-            {/* Right Column: Order Summary */}
-            <div className="lg:col-span-4 sticky top-24">
-              <div className="border border-[#e5e7eb] p-6 bg-[#fafafa]">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#000000] pb-4 border-b border-[#e5e7eb]">
-                  Order Summary
-                </h3>
-
-                <div className="space-y-3 py-4 text-xs border-b border-[#e5e7eb]">
-                  <div className="flex justify-between text-[#444444]">
-                    <span>Subtotal</span>
-                    <span className="font-semibold text-[#000000]">
-                      ৳{subtotal.toLocaleString()}
-                    </span>
-                  </div>
-
-                  {appliedDiscount > 0 && (
-                    <div className="flex justify-between text-[#15803d]">
-                      <span>Discount ({appliedDiscount}%)</span>
-                      <span className="font-semibold">-৳{discountAmount.toLocaleString()}</span>
-                    </div>
-                  )}
-
-                  {/* Destination Selector */}
-                  <div className="pt-2">
-                    <label className="text-[11px] font-bold uppercase text-[#000000] tracking-wider block mb-1.5">
-                      Shipping Destination
-                    </label>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setDeliveryArea("dhaka")}
-                        className={`py-2 px-2.5 text-center border font-semibold uppercase tracking-wider transition-colors ${deliveryArea === "dhaka"
-                            ? "bg-[#000000] text-white border-[#000000]"
-                            : "bg-[#ffffff] text-[#444444] border-[#e5e7eb] hover:border-[#000000]"
-                          }`}
-                      >
-                        Inside Dhaka
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeliveryArea("outside")}
-                        className={`py-2 px-2.5 text-center border font-semibold uppercase tracking-wider transition-colors ${deliveryArea === "outside"
-                            ? "bg-[#000000] text-white border-[#000000]"
-                            : "bg-[#ffffff] text-[#444444] border-[#e5e7eb] hover:border-[#000000]"
-                          }`}
-                      >
-                        Outside Dhaka
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between text-[#444444] pt-2">
-                    <span>Estimated Shipping</span>
-                    <span className="font-semibold text-[#000000]">
-                      {shippingCost === 0 ? "FREE" : `৳${shippingCost}`}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Promo Code Form */}
-                <div className="py-4 border-b border-[#e5e7eb]">
-                  <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      placeholder="Promo Code (e.g. VIBBE10)"
-                      className="flex-1 h-9 px-3 text-xs uppercase bg-[#ffffff] border border-[#e5e7eb] text-[#000000] placeholder:text-[#9ca3af] focus:outline-none focus:border-[#000000] transition-colors"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 h-9 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#222222] transition-colors shrink-0"
-                    >
-                      Apply
-                    </button>
-                  </form>
-                  {couponError && (
-                    <p className="text-[11px] text-[#d95338] mt-1.5">{couponError}</p>
-                  )}
-                  {couponSuccess && (
-                    <p className="text-[11px] text-[#15803d] mt-1.5">{couponSuccess}</p>
-                  )}
-                </div>
-
-                {/* Total Line */}
-                <div className="pt-4 pb-6 flex items-baseline justify-between">
-                  <span className="text-xs font-bold uppercase tracking-widest text-[#000000]">
-                    Total (BDT)
-                  </span>
-                  <span className="text-lg font-black text-[#000000]">
-                    ৳{total.toLocaleString()}
-                  </span>
-                </div>
-
-                {/* Checkout Link */}
-                <Link
-                  href="/checkout"
-                  className="w-full h-12 bg-[#000000] text-white text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#222222] transition-colors shadow-sm"
-                >
-                  <span>Proceed to Checkout</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-
-                <p className="text-[10px] text-center text-[#9ca3af] uppercase tracking-wider mt-3">
-                  Taxes & localized shipping calculated at checkout
-                </p>
-              </div>
-
-              {/* Local Payment Badges */}
-              <div className="mt-4 p-3 border border-[#e5e7eb] bg-white flex flex-wrap items-center justify-center gap-1.5 text-[9px] font-bold text-[#444444] uppercase tracking-wider">
-                <span className="px-2 py-0.5 bg-[#fafafa] border border-[#e5e7eb]">bKash</span>
-                <span className="px-2 py-0.5 bg-[#fafafa] border border-[#e5e7eb]">Nagad</span>
-                <span className="px-2 py-0.5 bg-[#fafafa] border border-[#e5e7eb]">Rocket</span>
-                <span className="px-2 py-0.5 bg-[#fafafa] border border-[#e5e7eb]">Cash on Delivery</span>
-              </div>
-            </div>
-
-          </div>
-        )}
+          </section>
+        ))}
       </div>
     </div>
   );

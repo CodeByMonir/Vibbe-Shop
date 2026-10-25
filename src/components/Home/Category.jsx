@@ -144,7 +144,7 @@ export default function ShopByCategory() {
               CATEGORY
             </span>
           </h2>
-          <div className="w-40 sm:w-52 h-[3px] bg-[#d95338] mt-3" />
+          <div className="w-40 sm:w-52 h-0.75 bg-[#d95338] mt-3" />
         </div>
 
         {/* 1:1 Hand Pointer / Touch Slider Track */}
@@ -165,7 +165,7 @@ export default function ShopByCategory() {
               href={cat.href}
               onClick={handleLinkClick}
               draggable={false}
-              className="flex-shrink-0 flex flex-col items-center w-[170px] sm:w-[220px]"
+              className="shrink-0 flex flex-col items-center w-42.5 sm:w-55"
             >
               {/* Category Title + Badge */}
               <div className="flex items-center justify-center gap-2 mb-4 h-7">
@@ -181,7 +181,7 @@ export default function ShopByCategory() {
               </div>
 
               {/* Product Floating Image */}
-              <div className="relative w-full h-[220px] sm:h-[280px] flex items-center justify-center">
+              <div className="relative w-full h-55 sm:h-70 flex items-center justify-center">
                 <img
                   src={cat.image}
                   alt={cat.name}
