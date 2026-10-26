@@ -13,6 +13,7 @@ import {
   Heart,
   Check,
   RotateCw,
+  ArrowLeft,
 } from "lucide-react";
 import { useStore } from "@/components/context/StoreContext";
 import { useFetch } from "@/components/hooks/useFetch";
@@ -26,15 +27,26 @@ function SearchContent() {
 
   const {
     data: rawProducts,
-    loading,
-    error,
+    loading: productsLoading,
+    error: productsError,
     retryCount,
-    refetch,
+    refetch: refetchProducts,
   } = useFetch("/data/products.json", { maxRetries: 3, retryDelay: 1000 });
+
+  const {
+    data: rawCategories,
+    loading: categoriesLoading,
+    error: categoriesError,
+    refetch: refetchCategories,
+  } = useFetch("/data/category.json", { maxRetries: 3, retryDelay: 1000 });
 
   const products = useMemo(() => {
     return Array.isArray(rawProducts) ? rawProducts : [];
   }, [rawProducts]);
+
+  const categoriesData = useMemo(() => {
+    return Array.isArray(rawCategories) ? rawCategories : [];
+  }, [rawCategories]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -74,9 +86,12 @@ function SearchContent() {
 
   // Derive categories and sizes dynamically
   const categories = useMemo(() => {
+    if (categoriesData.length > 0) {
+      return ["All", ...categoriesData.map((c) => c.name).filter(Boolean)];
+    }
     const list = Array.from(new Set(products.map((p) => p.category).filter(Boolean)));
     return ["All", ...list];
-  }, [products]);
+  }, [categoriesData, products]);
 
   const sizes = useMemo(() => {
     const allSizes = products.flatMap((p) => (Array.isArray(p.sizes) ? p.sizes : []));
@@ -119,8 +134,50 @@ function SearchContent() {
     setSortBy("featured");
   };
 
+  const handleRetry = () => {
+    if (productsError) refetchProducts();
+    if (categoriesError) refetchCategories();
+  };
+
   return (
     <div className="min-h-screen bg-[#ffffff] text-[#111827] font-sans selection:bg-[#000000] selection:text-white">
+      {/* Category Links Navigation Bar */}
+      <div className="border-b border-[#e5e7eb] bg-[#fafafa]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+            <Link
+              href="/shop"
+              onClick={() => setSelectedCategory("All")}
+              className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider shrink-0 pr-2 border-r border-[#e5e7eb] transition-colors ${selectedCategory === "All"
+                  ? "text-[#000000]"
+                  : "text-[#71717A] hover:text-[#000000]"
+                }`}
+            >
+              <span>Vibbe Items</span>
+            </Link>
+
+            {categoriesData.map((cat) => {
+              const isActive =
+                selectedCategory.toLowerCase() === cat.name.toLowerCase() ||
+                (categoryFromUrl && categoryFromUrl.toLowerCase() === cat.name.toLowerCase());
+
+              return (
+                <Link
+                  key={cat.id || cat.href}
+                  href={cat.href}
+                  className={`px-3 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors shrink-0 ${isActive
+                      ? "bg-[#000000] text-white"
+                      : "bg-[#ffffff] text-[#71717A] border border-[#e5e7eb] hover:border-[#000000] hover:text-[#000000]"
+                    }`}
+                >
+                  {cat.name}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* Search Header Banner */}
       <div className="border-b border-[#e5e7eb] bg-[#fafafa]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
@@ -261,9 +318,9 @@ function SearchContent() {
 
         {/* Product Grid Area */}
         <main className="pt-6 sm:pt-8">
-          {loading ? (
+          {productsLoading || categoriesLoading ? (
             <LoadingSpinner text="Loading collection..." className="py-24" />
-          ) : error ? (
+          ) : productsError || categoriesError ? (
             <div className="py-16 sm:py-24 text-center flex flex-col items-center justify-center border border-dashed border-[#e5e7eb] px-4">
               <h3 className="text-base font-bold uppercase tracking-wide text-[#d95338]">
                 Failed to load products
@@ -272,7 +329,7 @@ function SearchContent() {
                 We couldn't connect to the catalog after 3 attempts. Please check your connection.
               </p>
               <button
-                onClick={refetch}
+                onClick={handleRetry}
                 className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#222222] transition-colors"
               >
                 <RotateCw className="w-3.5 h-3.5" />
