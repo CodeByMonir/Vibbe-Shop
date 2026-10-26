@@ -20,7 +20,7 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { name: "Search", href: "/search", icon: Search },
+    { name: "Search", href: "/shop", icon: Search },
     {
       name: "Favorites",
       href: "/favorites",
@@ -50,7 +50,7 @@ export default function Navbar() {
             <Link href="/" className="flex items-center gap-1.5 group">
               <div className="relative w-8 h-8 sm:w-10 sm:h-10 shrink-0">
                 <Image
-                  src="/vibbeLogo.png"
+                  src="/img/logo/vibbeLogo.png"
                   alt="Vibbe Logo"
                   fill
                   sizes="40px"

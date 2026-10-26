@@ -3,31 +3,44 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, ShoppingBag, ArrowRight, Heart } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowRight, Heart, AlertTriangle, X } from "lucide-react";
 import { useStore } from "@/components/context/StoreContext";
+import LoadingSpinner from "@/components/loading/loading";
 
 export default function FavoritesPage() {
   const { favorites, toggleFavorite, clearFavorites, addToCart } = useStore();
   const [mounted, setMounted] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const removeItem = (id) => {
+  const removeItem = (id, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     toggleFavorite({ id });
   };
 
-  const clearAll = () => {
+  const handleConfirmClear = () => {
     clearFavorites();
+    setShowConfirmModal(false);
   };
 
-  const handleMoveToBag = (product) => {
+  const handleMoveToBag = (product, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     addToCart(product, product.selectedSize);
-    removeItem(product.id);
+    toggleFavorite({ id: product.id });
   };
 
-  const displayedFavorites = mounted ? favorites : [];
+  if (!mounted) {
+    return <LoadingSpinner fullScreen text="Loading Wishlist..." />;
+  }
 
   return (
     <div className="min-h-screen bg-[#ffffff] text-[#111827] font-sans selection:bg-[#000000] selection:text-white">
@@ -44,14 +57,14 @@ export default function FavoritesPage() {
               </p>
             </div>
             <span className="text-xs font-semibold uppercase tracking-widest text-[#444444]">
-              {displayedFavorites.length} {displayedFavorites.length === 1 ? "Item" : "Items"}
+              {favorites.length} {favorites.length === 1 ? "Item" : "Items"}
             </span>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {displayedFavorites.length === 0 ? (
+        {favorites.length === 0 ? (
           /* Empty State */
           <div className="py-20 text-center flex flex-col items-center justify-center border border-dashed border-[#e5e7eb] px-4">
             <div className="w-14 h-14 rounded-full bg-[#f4f4f5] flex items-center justify-center mb-4">
@@ -79,8 +92,9 @@ export default function FavoritesPage() {
                 Saved Products
               </span>
               <button
-                onClick={clearAll}
-                className="text-xs font-bold uppercase tracking-wider text-[#d95338] underline underline-offset-4 hover:opacity-80 transition-opacity"
+                type="button"
+                onClick={() => setShowConfirmModal(true)}
+                className="text-xs font-bold uppercase tracking-wider text-[#d95338] underline underline-offset-4 hover:opacity-80 transition-opacity cursor-pointer"
               >
                 Clear Wishlist
               </button>
@@ -88,39 +102,46 @@ export default function FavoritesPage() {
 
             {/* Grid Catalog */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10">
-              {displayedFavorites.map((product) => (
+              {favorites.map((product) => (
                 <div key={product.id} className="group flex flex-col">
-                  {/* Image Container */}
+                  {/* Clickable Image Container */}
                   <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden mb-3">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-                    />
+                    <Link
+                      href={`/shop/${product.id}`}
+                      className="block w-full h-full relative"
+                    >
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                      />
+                    </Link>
 
                     {/* Stock Status Tag */}
-                    {!product.inStock && (
-                      <span className="absolute top-2.5 left-2.5 bg-[#000000]/80 backdrop-blur-sm text-white text-[9px] font-bold uppercase px-2 py-0.5 tracking-wider">
+                    {product.inStock === false && (
+                      <span className="pointer-events-none absolute top-2.5 left-2.5 bg-[#000000]/80 backdrop-blur-sm text-white text-[9px] font-bold uppercase px-2 py-0.5 tracking-wider">
                         Out of Stock
                       </span>
                     )}
 
                     {/* Remove Action */}
                     <button
-                      onClick={() => removeItem(product.id)}
+                      type="button"
+                      onClick={(e) => removeItem(product.id, e)}
                       aria-label="Remove item"
-                      className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-[#111111] hover:text-[#d95338] hover:bg-white transition-colors shadow-sm"
+                      className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center text-[#111111] hover:text-[#d95338] hover:bg-white transition-colors shadow-sm cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
 
                     {/* Move to Cart Quick-Action Button */}
-                    {product.inStock && (
+                    {product.inStock !== false && (
                       <button
-                        onClick={() => handleMoveToBag(product)}
-                        className="hidden sm:flex absolute inset-x-0 bottom-0 h-10 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-200"
+                        type="button"
+                        onClick={(e) => handleMoveToBag(product, e)}
+                        className="hidden sm:flex absolute inset-x-0 bottom-0 h-10 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-200 cursor-pointer"
                       >
                         <ShoppingBag className="w-3.5 h-3.5" />
                         <span>Move To Bag</span>
@@ -140,7 +161,7 @@ export default function FavoritesPage() {
                         )}
                       </div>
                       <Link
-                        href={`/products/${product.id}`}
+                        href={`/shop/${product.id}`}
                         className="text-xs font-bold text-[#111111] uppercase tracking-wide hover:underline line-clamp-1"
                       >
                         {product.name}
@@ -162,15 +183,16 @@ export default function FavoritesPage() {
 
                       {/* Mobile-Only Direct Action */}
                       <button
-                        onClick={() => handleMoveToBag(product)}
-                        disabled={!product.inStock}
-                        className={`sm:hidden w-full py-2 text-[11px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1.5 transition-colors ${product.inStock
-                          ? "bg-[#000000] text-white border-[#000000]"
-                          : "bg-[#f4f4f5] text-[#9ca3af] border-[#e5e7eb] cursor-not-allowed"
+                        type="button"
+                        onClick={(e) => handleMoveToBag(product, e)}
+                        disabled={product.inStock === false}
+                        className={`sm:hidden w-full py-2 text-[11px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1.5 transition-colors ${product.inStock !== false
+                            ? "bg-[#000000] text-white border-[#000000]"
+                            : "bg-[#f4f4f5] text-[#9ca3af] border-[#e5e7eb] cursor-not-allowed"
                           }`}
                       >
                         <ShoppingBag className="w-3 h-3" />
-                        <span>{product.inStock ? "Move to Bag" : "Out of Stock"}</span>
+                        <span>{product.inStock !== false ? "Move to Bag" : "Out of Stock"}</span>
                       </button>
                     </div>
                   </div>
@@ -180,6 +202,62 @@ export default function FavoritesPage() {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
+          onClick={() => setShowConfirmModal(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white border border-[#e5e7eb] p-6 shadow-2xl relative select-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setShowConfirmModal(false)}
+              className="absolute top-4 right-4 text-[#9ca3af] hover:text-[#000000] transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Modal Icon & Header */}
+            <div className="flex items-start gap-3.5 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#fff5f5] flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-[#d95338]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#000000]">
+                  Clear Entire Wishlist?
+                </h3>
+                <p className="text-xs text-[#555555] mt-1 leading-relaxed">
+                  This will remove all {favorites.length} saved {favorites.length === 1 ? "item" : "items"} from your rotation. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#e5e7eb]">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#444444] border border-[#e5e7eb] hover:border-[#000000] hover:text-[#000000] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClear}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-[#d95338] hover:bg-[#b83d25] transition-colors"
+              >
+                Yes, Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

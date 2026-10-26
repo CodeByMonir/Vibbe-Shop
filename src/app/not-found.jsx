@@ -57,7 +57,7 @@ export default function NotFound() {
 
                     {/* Secondary Button: Browse Shop */}
                     <Link
-                        href="/search"
+                        href="/shop"
                         className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-transparent text-[#000000] border border-[#e5e7eb] hover:border-[#000000] text-xs font-semibold uppercase tracking-wider transition-colors focus-visible:outline-2 focus-visible:outline-[#000000] focus-visible:outline-offset-2"
                     >
                         <Search className="w-4 h-4" />

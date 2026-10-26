@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 
 const StoreContext = createContext(null);
 
@@ -14,10 +14,17 @@ export function StoreProvider({ children }) {
         try {
             const savedCart = localStorage.getItem("vibbe_cart");
             const savedFavorites = localStorage.getItem("vibbe_favorites");
-            if (savedCart) setCart(JSON.parse(savedCart));
-            if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+
+            if (savedCart) {
+                const parsed = JSON.parse(savedCart);
+                if (Array.isArray(parsed)) setCart(parsed);
+            }
+            if (savedFavorites) {
+                const parsed = JSON.parse(savedFavorites);
+                if (Array.isArray(parsed)) setFavorites(parsed);
+            }
         } catch (error) {
-            console.error("Failed to load cart/favorites from localStorage:", error);
+            console.error("Failed to load state from localStorage:", error);
         } finally {
             setIsInitialized(true);
         }
@@ -26,63 +33,124 @@ export function StoreProvider({ children }) {
     // Sync cart updates to localStorage
     useEffect(() => {
         if (isInitialized) {
-            localStorage.setItem("vibbe_cart", JSON.stringify(cart));
+            try {
+                localStorage.setItem("vibbe_cart", JSON.stringify(cart));
+            } catch (err) {
+                console.error("Failed saving cart to localStorage:", err);
+            }
         }
     }, [cart, isInitialized]);
 
     // Sync favorites updates to localStorage
     useEffect(() => {
         if (isInitialized) {
-            localStorage.setItem("vibbe_favorites", JSON.stringify(favorites));
+            try {
+                localStorage.setItem("vibbe_favorites", JSON.stringify(favorites));
+            } catch (err) {
+                console.error("Failed saving favorites to localStorage:", err);
+            }
         }
     }, [favorites, isInitialized]);
 
     // --- Cart Actions ---
-    const addToCart = (product, selectedSize = null) => {
+
+    /**
+     * Add an item to the shopping bag.
+     * Supports: (product), (product, size), or (product, size, quantity).
+     * Checks for both ID, Size, and Color to avoid variant collisions.
+     */
+    const addToCart = useCallback((product, selectedSize = null, customQty = 1) => {
+        if (!product || !product.id) return;
+
+        // 1. Resolve Size
         const sizeToUse =
             selectedSize ||
-            (Array.isArray(product?.sizes) && product.sizes[0]) ||
-            "One Size";
+            product.selectedSize ||
+            product.size ||
+            (Array.isArray(product.sizes) && product.sizes[0]) ||
+            "Standard";
+
+        // 2. Resolve Color
+        const colorToUse =
+            product.color ||
+            (Array.isArray(product.colors) && product.colors[0]) ||
+            "Standard";
+
+        // 3. Resolve Quantity
+        const qtyToAdd = Math.max(
+            1,
+            Number(customQty) || Number(product.quantity) || 1
+        );
 
         setCart((prev) => {
+            // Find matching item by id, size, AND color
             const existingIndex = prev.findIndex(
-                (item) => item.id === product.id && item.size === sizeToUse
+                (item) =>
+                    String(item.id) === String(product.id) &&
+                    String(item.size).toLowerCase() === String(sizeToUse).toLowerCase() &&
+                    String(item.color).toLowerCase() === String(colorToUse).toLowerCase()
             );
 
             if (existingIndex > -1) {
                 const updated = [...prev];
-                updated[existingIndex].quantity += 1;
+                updated[existingIndex] = {
+                    ...updated[existingIndex],
+                    quantity: updated[existingIndex].quantity + qtyToAdd,
+                };
                 return updated;
             }
 
+            // New line item
             return [
                 ...prev,
                 {
                     id: product.id,
                     name: product.name,
-                    category: product.category,
-                    price: product.price,
-                    originalPrice: product.originalPrice || null,
-                    image: product.image,
-                    color: (product.colors && product.colors[0]) || "Standard",
+                    category: product.category || "Apparel",
+                    price: Number(product.price) || 0,
+                    originalPrice: product.originalPrice ? Number(product.originalPrice) : null,
+                    image: product.image || "/placeholder.png",
+                    color: colorToUse,
                     size: sizeToUse,
-                    quantity: 1,
+                    quantity: qtyToAdd,
+                    badge: product.badge || null,
                 },
             ];
         });
-    };
+    }, []);
 
-    const removeFromCart = (id, size) => {
+    /**
+     * Remove item matching ID, Size, and optional Color.
+     */
+    const removeFromCart = useCallback((id, size, color = null) => {
         setCart((prev) =>
-            prev.filter((item) => !(item.id === id && item.size === size))
-        );
-    };
+            prev.filter((item) => {
+                const matchId = String(item.id) === String(id);
+                const matchSize = String(item.size).toLowerCase() === String(size).toLowerCase();
+                const matchColor = color
+                    ? String(item.color).toLowerCase() === String(color).toLowerCase()
+                    : true;
 
-    const updateCartQuantity = (id, size, delta) => {
+                // Keep item if it does NOT match all criteria
+                return !(matchId && matchSize && matchColor);
+            })
+        );
+    }, []);
+
+    /**
+     * Increment or decrement item quantity.
+     */
+    const updateCartQuantity = useCallback((id, size, delta, color = null) => {
         setCart((prev) =>
             prev
                 .map((item) => {
-                    if (item.id === id && item.size === size) {
+                    const matchId = String(item.id) === String(id);
+                    const matchSize = String(item.size).toLowerCase() === String(size).toLowerCase();
+                    const matchColor = color
+                        ? String(item.color).toLowerCase() === String(color).toLowerCase()
+                        : true;
+
+                    if (matchId && matchSize && matchColor) {
                         const nextQty = item.quantity + delta;
                         return nextQty > 0 ? { ...item, quantity: nextQty } : null;
                     }
@@ -90,63 +158,111 @@ export function StoreProvider({ children }) {
                 })
                 .filter(Boolean)
         );
-    };
+    }, []);
 
-    const clearCart = () => {
+    const clearCart = useCallback(() => {
         setCart([]);
-    };
+    }, []);
 
     // --- Favorites / Wishlist Actions ---
-    const toggleFavorite = (product) => {
+
+    const toggleFavorite = useCallback((product) => {
+        if (!product || !product.id) return;
+
         setFavorites((prev) => {
-            const exists = prev.some((item) => item.id === product.id);
+            const exists = prev.some((item) => String(item.id) === String(product.id));
+
             if (exists) {
-                return prev.filter((item) => item.id !== product.id);
+                return prev.filter((item) => String(item.id) !== String(product.id));
             }
+
             return [
                 ...prev,
                 {
                     id: product.id,
                     name: product.name,
-                    category: product.category,
-                    price: product.price,
-                    originalPrice: product.originalPrice || null,
-                    image: product.image,
-                    selectedSize: (product.sizes && product.sizes[0]) || "Standard",
+                    category: product.category || "Apparel",
+                    price: Number(product.price) || 0,
+                    originalPrice: product.originalPrice ? Number(product.originalPrice) : null,
+                    image: product.image || "/placeholder.png",
+                    selectedSize:
+                        product.selectedSize ||
+                        product.size ||
+                        (Array.isArray(product.sizes) && product.sizes[0]) ||
+                        "Standard",
                     inStock: product.inStock !== false,
                 },
             ];
         });
-    };
+    }, []);
 
-    const isFavorite = (id) => {
-        return favorites.some((item) => item.id === id);
-    };
+    const isFavorite = useCallback(
+        (id) => {
+            if (!id) return false;
+            return favorites.some((item) => String(item.id) === String(id));
+        },
+        [favorites]
+    );
 
-    const clearFavorites = () => {
+    const clearFavorites = useCallback(() => {
         setFavorites([]);
-    };
+    }, []);
 
-    // Totals & Derived Counts
-    const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-    const favoritesCount = favorites.length;
+    // --- Derived Calculations ---
+
+    const cartCount = useMemo(() => {
+        return cart.reduce((acc, item) => acc + (Number(item.quantity) || 1), 0);
+    }, [cart]);
+
+    const cartSubtotal = useMemo(() => {
+        return cart.reduce(
+            (acc, item) => acc + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+            0
+        );
+    }, [cart]);
+
+    const favoritesCount = useMemo(() => favorites.length, [favorites]);
+
+    const contextValue = useMemo(
+        () => ({
+            // State
+            cart,
+            cartCount,
+            cartSubtotal,
+            favorites,
+            favoritesCount,
+            isInitialized,
+
+            // Cart API
+            addToCart,
+            removeFromCart,
+            updateCartQuantity,
+            clearCart,
+
+            // Favorites API
+            toggleFavorite,
+            isFavorite,
+            clearFavorites,
+        }),
+        [
+            cart,
+            cartCount,
+            cartSubtotal,
+            favorites,
+            favoritesCount,
+            isInitialized,
+            addToCart,
+            removeFromCart,
+            updateCartQuantity,
+            clearCart,
+            toggleFavorite,
+            isFavorite,
+            clearFavorites,
+        ]
+    );
 
     return (
-        <StoreContext.Provider
-            value={{
-                cart,
-                cartCount,
-                addToCart,
-                removeFromCart,
-                updateCartQuantity,
-                clearCart,
-                favorites,
-                favoritesCount,
-                toggleFavorite,
-                isFavorite,
-                clearFavorites,
-            }}
-        >
+        <StoreContext.Provider value={contextValue}>
             {children}
         </StoreContext.Provider>
     );

@@ -1,8 +1,5 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import {
     ArrowRight,
     CheckCircle2,
@@ -10,6 +7,9 @@ import {
     ShieldCheck,
     Truck,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
     FaFacebookF,
     FaInstagram,
@@ -127,7 +127,7 @@ export default function Footer() {
                             <Link href="/" className="inline-flex items-center gap-2 group mb-4">
                                 <div className="relative w-8 h-8 shrink-0">
                                     <Image
-                                        src="/vibbeLogo.png"
+                                        src="/img/logo/vibbeLogo.png"
                                         alt="Vibbe"
                                         fill
                                         sizes="32px"
@@ -312,13 +312,11 @@ export default function Footer() {
 
                     {/* Standard Bangladesh Payment Badges */}
                     <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] font-bold text-[#333333] uppercase tracking-wider">
-                        <span className="px-2.5 py-1 bg-white border border-[#e5e7eb]">bKash</span>
-                        <span className="px-2.5 py-1 bg-white border border-[#e5e7eb]">Nagad</span>
-                        <span className="px-2.5 py-1 bg-white border border-[#e5e7eb]">Rocket</span>
-                        <span className="px-2.5 py-1 bg-white border border-[#e5e7eb]">Upay</span>
-                        <span className="px-2.5 py-1 bg-white border border-[#e5e7eb]">NexusPay</span>
-                        <span className="px-2.5 py-1 bg-white border border-[#e5e7eb]">Visa</span>
-                        <span className="px-2.5 py-1 bg-white border border-[#e5e7eb]">Mastercard</span>
+                        <span className="px-2.5 py-1 bg-white border border-[#e5e7eb]">Developed <a
+                            href="https://codebymonir.vercel.app"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >CodeByMonir</a></span>
                     </div>
                 </div>
             </div>

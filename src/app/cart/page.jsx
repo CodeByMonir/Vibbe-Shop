@@ -2,6 +2,7 @@
 
 import { useStore } from "@/components/context/StoreContext";
 import {
+  AlertTriangle,
   ArrowRight,
   Minus,
   Plus,
@@ -10,6 +11,7 @@ import {
   ShoppingBag,
   Trash2,
   Truck,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -20,6 +22,7 @@ const FREE_SHIPPING_THRESHOLD = 1500; // Free shipping threshold in BDT (৳)
 export default function CartPage() {
   const { cart, removeFromCart, updateCartQuantity, clearCart } = useStore();
   const [mounted, setMounted] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [deliveryArea, setDeliveryArea] = useState("dhaka"); // 'dhaka' (৳70) or 'outside' (৳130)
   const [couponCode, setCouponCode] = useState("");
@@ -77,6 +80,11 @@ export default function CartPage() {
     }
   };
 
+  const handleConfirmClear = () => {
+    clearCart();
+    setShowConfirmModal(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#ffffff] text-[#111827] font-sans selection:bg-[#000000] selection:text-white">
       {/* Header Banner */}
@@ -112,7 +120,7 @@ export default function CartPage() {
               Discover modern street tailoring, heavyweight tees, and utilitarian outerwear crafted for everyday wear.
             </p>
             <Link
-              href="/search"
+              href="/shop"
               className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#222222] transition-colors"
             >
               <span>Explore Collection</span>
@@ -148,7 +156,7 @@ export default function CartPage() {
                 {displayedCart.map((item) => (
                   <div key={`${item.id}-${item.size}`} className="py-6 flex gap-4 sm:gap-6">
                     {/* Item Image */}
-                    <div className="relative aspect-3/4 w-24 sm:w-28 bg-[#f4f4f5] shrink-0 overflow-hidden">
+                    <div className="relative aspect-[3/4] w-24 sm:w-28 bg-[#f4f4f5] shrink-0 overflow-hidden">
                       <Image
                         src={item.image}
                         alt={item.name}
@@ -167,7 +175,7 @@ export default function CartPage() {
                               {item.category}
                             </span>
                             <Link
-                              href={`/products/${item.id}`}
+                              href={`/shop/${item.id}`}
                               className="text-xs sm:text-sm font-bold uppercase text-[#000000] tracking-wide hover:underline line-clamp-1 mt-0.5"
                             >
                               {item.name}
@@ -176,7 +184,7 @@ export default function CartPage() {
                           <button
                             onClick={() => removeFromCart(item.id, item.size)}
                             aria-label="Remove item"
-                            className="text-[#9ca3af] hover:text-[#d95338] transition-colors p-1"
+                            className="text-[#9ca3af] hover:text-[#d95338] transition-colors p-1 cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -187,7 +195,7 @@ export default function CartPage() {
                           <span className="border border-[#e5e7eb] px-2 py-0.5 font-semibold text-[#111111]">
                             Size: {item.size}
                           </span>
-                          <span>{item.color}</span>
+                          {item.color && <span>{item.color}</span>}
                         </div>
                       </div>
 
@@ -197,7 +205,7 @@ export default function CartPage() {
                           <button
                             onClick={() => updateCartQuantity(item.id, item.size, -1)}
                             aria-label="Decrease quantity"
-                            className="w-8 h-full flex items-center justify-center text-[#111111] hover:bg-[#fafafa] transition-colors disabled:opacity-40"
+                            className="w-8 h-full flex items-center justify-center text-[#111111] hover:bg-[#fafafa] transition-colors disabled:opacity-40 cursor-pointer"
                             disabled={item.quantity <= 1}
                           >
                             <Minus className="w-3 h-3" />
@@ -208,7 +216,7 @@ export default function CartPage() {
                           <button
                             onClick={() => updateCartQuantity(item.id, item.size, 1)}
                             aria-label="Increase quantity"
-                            className="w-8 h-full flex items-center justify-center text-[#111111] hover:bg-[#fafafa] transition-colors"
+                            className="w-8 h-full flex items-center justify-center text-[#111111] hover:bg-[#fafafa] transition-colors cursor-pointer"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
@@ -230,11 +238,12 @@ export default function CartPage() {
                 ))}
               </div>
 
-              {/* Clear Bag Option */}
+              {/* Clear Bag Trigger */}
               <div className="flex justify-end pt-2">
                 <button
-                  onClick={clearCart}
-                  className="text-xs font-bold uppercase tracking-wider text-[#d95338] underline underline-offset-4 hover:opacity-80 transition-opacity"
+                  type="button"
+                  onClick={() => setShowConfirmModal(true)}
+                  className="text-xs font-bold uppercase tracking-wider text-[#d95338] underline underline-offset-4 hover:opacity-80 transition-opacity cursor-pointer"
                 >
                   Clear Bag
                 </button>
@@ -289,7 +298,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => setDeliveryArea("dhaka")}
-                        className={`py-2 px-2.5 text-center border font-semibold uppercase tracking-wider transition-colors ${deliveryArea === "dhaka"
+                        className={`py-2 px-2.5 text-center border font-semibold uppercase tracking-wider transition-colors cursor-pointer ${deliveryArea === "dhaka"
                             ? "bg-[#000000] text-white border-[#000000]"
                             : "bg-[#ffffff] text-[#444444] border-[#e5e7eb] hover:border-[#000000]"
                           }`}
@@ -299,7 +308,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => setDeliveryArea("outside")}
-                        className={`py-2 px-2.5 text-center border font-semibold uppercase tracking-wider transition-colors ${deliveryArea === "outside"
+                        className={`py-2 px-2.5 text-center border font-semibold uppercase tracking-wider transition-colors cursor-pointer ${deliveryArea === "outside"
                             ? "bg-[#000000] text-white border-[#000000]"
                             : "bg-[#ffffff] text-[#444444] border-[#e5e7eb] hover:border-[#000000]"
                           }`}
@@ -329,7 +338,7 @@ export default function CartPage() {
                     />
                     <button
                       type="submit"
-                      className="px-4 h-9 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#222222] transition-colors shrink-0"
+                      className="px-4 h-9 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#222222] transition-colors shrink-0 cursor-pointer"
                     >
                       Apply
                     </button>
@@ -365,19 +374,67 @@ export default function CartPage() {
                   Taxes & localized shipping calculated at checkout
                 </p>
               </div>
-
-              {/* Local Payment Badges */}
-              <div className="mt-4 p-3 border border-[#e5e7eb] bg-white flex flex-wrap items-center justify-center gap-1.5 text-[9px] font-bold text-[#444444] uppercase tracking-wider">
-                <span className="px-2 py-0.5 bg-[#fafafa] border border-[#e5e7eb]">bKash</span>
-                <span className="px-2 py-0.5 bg-[#fafafa] border border-[#e5e7eb]">Nagad</span>
-                <span className="px-2 py-0.5 bg-[#fafafa] border border-[#e5e7eb]">Rocket</span>
-                <span className="px-2 py-0.5 bg-[#fafafa] border border-[#e5e7eb]">Cash on Delivery</span>
-              </div>
             </div>
 
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
+          onClick={() => setShowConfirmModal(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white border border-[#e5e7eb] p-6 shadow-2xl relative select-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setShowConfirmModal(false)}
+              className="absolute top-4 right-4 text-[#9ca3af] hover:text-[#000000] transition-colors cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Modal Icon & Header */}
+            <div className="flex items-start gap-3.5 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#fff5f5] flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-[#d95338]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[#000000]">
+                  Clear Shopping Bag?
+                </h3>
+                <p className="text-xs text-[#555555] mt-1 leading-relaxed">
+                  This will remove all items from your bag. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#e5e7eb]">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#444444] border border-[#e5e7eb] hover:border-[#000000] hover:text-[#000000] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClear}
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-[#d95338] hover:bg-[#b83d25] transition-colors cursor-pointer"
+              >
+                Yes, Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

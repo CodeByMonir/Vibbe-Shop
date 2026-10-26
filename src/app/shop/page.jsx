@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   X,
@@ -15,15 +16,14 @@ import {
 } from "lucide-react";
 import { useStore } from "@/components/context/StoreContext";
 import { useFetch } from "@/components/hooks/useFetch";
+import LoadingSpinner from "@/components/loading/loading";
 
+function SearchContent() {
+  const searchParams = useSearchParams();
+  const categoryFromUrl = searchParams.get("category");
 
-export default function SearchPage() {
   const { addToCart, toggleFavorite, isFavorite } = useStore();
 
-  // const url = "/public/data/products.json"
-
-  // Using the reusable fetch hook with a 3-attempt ceiling
-  
   const {
     data: rawProducts,
     loading,
@@ -31,7 +31,6 @@ export default function SearchPage() {
     retryCount,
     refetch,
   } = useFetch("/data/products.json", { maxRetries: 3, retryDelay: 1000 });
-
 
   const products = useMemo(() => {
     return Array.isArray(rawProducts) ? rawProducts : [];
@@ -44,12 +43,33 @@ export default function SearchPage() {
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [addedItemNotice, setAddedItemNotice] = useState(null);
 
-  const handleQuickAdd = (product) => {
+  // Sync category from URL parameter whenever URL changes
+  useEffect(() => {
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl);
+    } else {
+      setSelectedCategory("All");
+    }
+  }, [categoryFromUrl]);
+
+  const handleQuickAdd = (product, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     addToCart(product);
     setAddedItemNotice(product.id);
     setTimeout(() => {
       setAddedItemNotice((current) => (current === product.id ? null : current));
     }, 1400);
+  };
+
+  const handleToggleWishlist = (product, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    toggleFavorite(product);
   };
 
   // Derive categories and sizes dynamically
@@ -74,8 +94,10 @@ export default function SearchPage() {
         const matchesSearch =
           name.toLowerCase().includes(query) || category.toLowerCase().includes(query);
 
+        // Case-insensitive category match
         const matchesCategory =
-          selectedCategory === "All" || category === selectedCategory;
+          selectedCategory === "All" ||
+          category.toLowerCase() === selectedCategory.toLowerCase();
 
         const matchesSize =
           selectedSize === "All" ||
@@ -240,16 +262,7 @@ export default function SearchPage() {
         {/* Product Grid Area */}
         <main className="pt-6 sm:pt-8">
           {loading ? (
-            <div className="py-24 text-center">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#000000]">
-                Loading collection...
-              </p>
-              {retryCount > 0 && (
-                <p className="text-[11px] text-[#9ca3af] mt-2">
-                  Retrying connection ({retryCount}/3)...
-                </p>
-              )}
-            </div>
+            <LoadingSpinner text="Loading collection..." className="py-24" />
           ) : error ? (
             <div className="py-16 sm:py-24 text-center flex flex-col items-center justify-center border border-dashed border-[#e5e7eb] px-4">
               <h3 className="text-base font-bold uppercase tracking-wide text-[#d95338]">
@@ -290,29 +303,35 @@ export default function SearchPage() {
 
                 return (
                   <div key={product.id} className="group flex flex-col">
+                    {/* Clickable Image Container */}
                     <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden mb-3">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        loading="eager"
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
-                      />
+                      <Link
+                        href={`/shop/${product.id}`}
+                        className="block w-full h-full relative"
+                      >
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          loading="eager"
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                        />
+                      </Link>
 
                       {product.badge && (
-                        <span className="absolute top-2.5 left-2.5 bg-[#000000] text-white text-[9px] font-bold uppercase px-2 py-0.5 tracking-wider">
+                        <span className="pointer-events-none absolute top-2.5 left-2.5 bg-[#000000] text-white text-[9px] font-bold uppercase px-2 py-0.5 tracking-wider">
                           {product.badge}
                         </span>
                       )}
 
-                      {/* Wishlist / Favorite Button */}
+                      {/* Wishlist Button (Stop propagation to prevent link click) */}
                       <button
-                        onClick={() => toggleFavorite(product)}
+                        onClick={(e) => handleToggleWishlist(product, e)}
                         aria-label={favoriteActive ? "Remove from wishlist" : "Add to wishlist"}
                         className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center transition-colors shadow-sm ${favoriteActive
-                          ? "text-[#d95338]"
-                          : "text-[#111111] hover:text-[#d95338]"
+                            ? "text-[#d95338]"
+                            : "text-[#111111] hover:text-[#d95338]"
                           }`}
                       >
                         <Heart
@@ -322,7 +341,7 @@ export default function SearchPage() {
 
                       {/* Quick Add To Cart Button */}
                       <button
-                        onClick={() => handleQuickAdd(product)}
+                        onClick={(e) => handleQuickAdd(product, e)}
                         className="hidden sm:flex absolute inset-x-0 bottom-0 h-10 bg-[#000000] text-white text-xs font-semibold uppercase tracking-wider items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-200 cursor-pointer"
                       >
                         {isJustAdded ? (
@@ -345,7 +364,7 @@ export default function SearchPage() {
                           {product.category}
                         </span>
                         <Link
-                          href={`/products/${product.id}`}
+                          href={`/shop/${product.id}`}
                           className="text-xs font-bold text-[#111111] uppercase tracking-wide hover:underline line-clamp-1"
                         >
                           {product.name}
@@ -366,7 +385,7 @@ export default function SearchPage() {
 
                         {/* Mobile Add to Cart Button */}
                         <button
-                          onClick={() => handleQuickAdd(product)}
+                          onClick={(e) => handleQuickAdd(product, e)}
                           className="sm:hidden p-1.5 border border-[#e5e7eb] hover:border-[#000000] text-[#000000] transition-colors"
                           aria-label="Add to cart"
                         >
@@ -386,5 +405,13 @@ export default function SearchPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner fullScreen text="Loading Search..." />}>
+      <SearchContent />
+    </Suspense>
   );
 }

@@ -1,66 +1,126 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingBag, ArrowRight } from "lucide-react";
 import { useStore } from "@/components/context/StoreContext";
-import { useFetch } from "@/components/hooks/useFetch";
+import LoadingSpinner from "../loading/loading";
 
 export default function CategoryShowcase({ initialCategories = [] }) {
-    const store = useStore();
-    const { addToCart, toggleFavorite, isFavorite } = store;
+    const { addToCart, toggleFavorite, isFavorite } = useStore();
 
-    // Use products from StoreContext if exposed, otherwise fetch with useFetch fallback
-    const { data: fetchedProducts, loading } = useFetch("/data/products.json", {
-        maxRetries: 3,
-    });
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState(null);
 
-    const products = useMemo(() => {
-        if (Array.isArray(store.products) && store.products.length > 0) {
-            return store.products;
+    useEffect(() => {
+        let isMounted = true;
+
+        async function loadData() {
+            try {
+                const res = await fetch("/data/products.json");
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: Failed to load /data/products.json`);
+                }
+
+                const json = await res.json();
+
+                // Safely extract array whether JSON is [ ... ] or { products: [ ... ] } or { data: [ ... ] }
+                let items = [];
+                if (Array.isArray(json)) {
+                    items = json;
+                } else if (Array.isArray(json?.products)) {
+                    items = json.products;
+                } else if (Array.isArray(json?.data)) {
+                    items = json.data;
+                } else {
+                    throw new Error("JSON structure invalid: expected an array of products.");
+                }
+
+                if (isMounted) {
+                    setProducts(items);
+                    setLoading(false);
+                }
+            } catch (err) {
+                if (isMounted) {
+                    console.error("CategoryShowcase error:", err);
+                    setFetchError(err.message);
+                    setLoading(false);
+                }
+            }
         }
-        return Array.isArray(fetchedProducts) ? fetchedProducts : [];
-    }, [store.products, fetchedProducts]);
+
+        loadData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     // Group products by category
     const groupedProducts = useMemo(() => {
+        if (!products || products.length === 0) return {};
+
         const groups = {};
 
         products.forEach((product) => {
-            const category = product.category || "Uncategorized";
-            if (!groups[category]) {
-                groups[category] = [];
+            const cat = (product.category || "Uncategorized").trim();
+            if (!groups[cat]) {
+                groups[cat] = [];
             }
-            groups[category].push(product);
+            groups[cat].push(product);
         });
 
-        // If specific categories requested, filter and preserve order
-        if (initialCategories.length > 0) {
+        // If specific initial categories are requested, filter with fallback
+        if (initialCategories && initialCategories.length > 0) {
             const filtered = {};
-            initialCategories.forEach((cat) => {
-                if (groups[cat]) filtered[cat] = groups[cat];
+            const availableKeys = Object.keys(groups);
+
+            initialCategories.forEach((target) => {
+                const found = availableKeys.find(
+                    (k) => k.toLowerCase().trim() === target.toLowerCase().trim()
+                );
+                if (found && groups[found].length > 0) {
+                    filtered[found] = groups[found];
+                }
             });
-            return filtered;
+
+            // If categories matched, use filtered; otherwise fall back to all groups
+            if (Object.keys(filtered).length > 0) {
+                return filtered;
+            }
         }
 
         return groups;
     }, [products, initialCategories]);
 
-    if (loading && products.length === 0) {
+    // 1. Loading State
+    if (loading) {
+        return <LoadingSpinner text="Loading curated collections..." className="py-24" />;
+    }
+
+    // 2. Fetch or Parse Error State
+    if (fetchError) {
         return (
-            <div className="py-24 text-center">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#9ca3af]">
-                    Loading curated collections...
+            <div className="py-12 text-center border border-dashed border-[#d95338] max-w-xl mx-auto my-8 px-4">
+                <p className="text-xs font-bold uppercase text-[#d95338] tracking-wider mb-1">
+                    Catalog Loading Error
                 </p>
+                <p className="text-xs text-[#555555] font-mono">{fetchError}</p>
             </div>
         );
     }
 
     const categoryEntries = Object.entries(groupedProducts);
 
+    // 3. Empty Products State
     if (categoryEntries.length === 0) {
-        return null;
+        return (
+            <div className="py-16 text-center text-xs font-bold uppercase tracking-widest text-[#9ca3af]">
+                No products found in catalog.
+            </div>
+        );
     }
 
     return (
@@ -68,7 +128,7 @@ export default function CategoryShowcase({ initialCategories = [] }) {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 sm:space-y-24">
                 {categoryEntries.map(([categoryName, items]) => (
                     <section key={categoryName} className="flex flex-col">
-                        {/* Category Section Header */}
+                        {/* Category Header */}
                         <div className="flex items-end justify-between pb-4 border-b border-[#e5e7eb] mb-6 sm:mb-8">
                             <div>
                                 <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#9ca3af]">
@@ -88,17 +148,16 @@ export default function CategoryShowcase({ initialCategories = [] }) {
                             </Link>
                         </div>
 
-                        {/* Product Grid (up to 4 items preview per category) */}
+                        {/* Products Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10">
                             {items.slice(0, 4).map((product) => {
                                 const favoriteActive = isFavorite(product.id);
 
                                 return (
                                     <div key={product.id} className="group flex flex-col">
-                                        {/* Image Block with Direct Link */}
-                                        <div className="relative aspect-3/4 w-full bg-[#f4f4f5] overflow-hidden mb-3">
+                                        <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden mb-3">
                                             <Link
-                                                href={`/products/${product.id}`}
+                                                href={`/shop/${product.id}`}
                                                 className="block w-full h-full relative"
                                             >
                                                 <Image
@@ -110,7 +169,6 @@ export default function CategoryShowcase({ initialCategories = [] }) {
                                                 />
                                             </Link>
 
-                                            {/* Badges */}
                                             {product.badge && (
                                                 <span className="absolute top-2.5 left-2.5 pointer-events-none bg-[#000000] text-white text-[9px] font-bold uppercase px-2 py-0.5 tracking-wider">
                                                     {product.badge}
@@ -124,23 +182,14 @@ export default function CategoryShowcase({ initialCategories = [] }) {
                                                     e.preventDefault();
                                                     toggleFavorite(product);
                                                 }}
-                                                aria-label={
-                                                    favoriteActive
-                                                        ? "Remove from wishlist"
-                                                        : "Add to wishlist"
-                                                }
-                                                className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center transition-colors shadow-sm ${favoriteActive
-                                                        ? "text-[#d95338]"
-                                                        : "text-[#111111] hover:text-[#d95338]"
+                                                aria-label={favoriteActive ? "Remove from wishlist" : "Add to wishlist"}
+                                                className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center transition-colors shadow-sm ${favoriteActive ? "text-[#d95338]" : "text-[#111111] hover:text-[#d95338]"
                                                     }`}
                                             >
-                                                <Heart
-                                                    className={`w-4 h-4 ${favoriteActive ? "fill-current" : ""
-                                                        }`}
-                                                />
+                                                <Heart className={`w-4 h-4 ${favoriteActive ? "fill-current" : ""}`} />
                                             </button>
 
-                                            {/* Quick Add To Bag Overlay */}
+                                            {/* Quick Add To Cart */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -154,11 +203,11 @@ export default function CategoryShowcase({ initialCategories = [] }) {
                                             </button>
                                         </div>
 
-                                        {/* Metadata & Title Link */}
+                                        {/* Metadata & Title */}
                                         <div className="flex flex-col flex-1 justify-between gap-2">
                                             <div>
                                                 <Link
-                                                    href={`/products/${product.id}`}
+                                                    href={`/shop/${product.id}`}
                                                     className="text-xs font-bold text-[#111111] uppercase tracking-wide hover:underline line-clamp-1 block"
                                                 >
                                                     {product.name}

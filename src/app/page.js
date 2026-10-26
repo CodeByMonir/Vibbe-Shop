@@ -1,6 +1,6 @@
 import ShopByCategory from "@/components/Home/Category";
+import CategoryShowcase from "@/components/Home/CategoryShowcase";
 import HeroSection from "@/components/Home/Hero";
-import CategoryShowcase from "./test/page";
 
 export default function Home() {
   return (
