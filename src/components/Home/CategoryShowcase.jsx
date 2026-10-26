@@ -96,7 +96,7 @@ export default function CategoryShowcase({ initialCategories = [] }) {
                                 return (
                                     <div key={product.id} className="group flex flex-col">
                                         {/* Image Block with Direct Link */}
-                                        <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden mb-3">
+                                        <div className="relative aspect-3/4 w-full bg-[#f4f4f5] overflow-hidden mb-3">
                                             <Link
                                                 href={`/products/${product.id}`}
                                                 className="block w-full h-full relative"

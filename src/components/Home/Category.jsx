@@ -2,50 +2,62 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const CATEGORIES = [
   {
     id: 1,
-    name: "CARGOS",
-    href: "/category/cargos",
-    image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=600&q=80",
+    name: "DROP SHOULDER",
+    href: "/category/drop-shoulder",
+    image: "/img/cat/drop-shoulder.png",
   },
   {
     id: 2,
-    name: "POLOS",
-    href: "/category/polos",
-    image: "https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&w=600&q=80",
+    name: "T-SHIRT",
+    href: "/category/t-shirt",
+    image: "/img/cat/t-shirt.png",
   },
   {
     id: 3,
-    name: "OUTERWEAR",
-    href: "/category/outerwear",
-    image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80",
+    name: "SHIRT",
+    href: "/category/shirt",
+    image: "/img/cat/shirt.png",
   },
   {
     id: 4,
-    name: "PLUS SIZE",
-    href: "/category/plus-size",
-    badge: "3XL TO 6XL",
-    image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80",
+    name: "PANJABI",
+    href: "/category/panjabi",
+    image: "/img/cat/panjabi.png",
   },
   {
     id: 5,
-    name: "SNEAKERS",
-    href: "/category/sneakers",
-    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=600&q=80",
+    name: "HOODIE",
+    href: "/category/hoodie",
+    image: "/img/cat/hoodie.png",
   },
   {
     id: 6,
-    name: "SHIRTS",
-    href: "/category/shirts",
-    image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=600&q=80",
+    name: "POLO",
+    href: "/category/polo",
+    image: "/img/cat/polo.png",
   },
   {
     id: 7,
-    name: "DENIM",
-    href: "/category/denim",
-    image: "https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=600&q=80",
+    name: "DENIM JEANS",
+    href: "/category/denim-jeans",
+    image: "/img/cat/denim-jeans.png",
+  },
+  {
+    id: 8,
+    name: "HALF PANTS",
+    href: "/category/half-pants",
+    image: "/img/cat/half-pants.png",
+  },
+  {
+    id: 9,
+    name: "FORMAL PANT",
+    href: "/category/formal-pant",
+    image: "/img/cat/formal-pant.png",
   },
 ];
 
@@ -182,11 +194,13 @@ export default function ShopByCategory() {
 
               {/* Product Floating Image */}
               <div className="relative w-full h-55 sm:h-70 flex items-center justify-center">
-                <img
+                <Image
                   src={cat.image}
-                  alt={cat.name}
+                  alt={cat.name || "Category image"}
+                  width={400}
+                  height={400}
                   draggable={false}
-                  className="max-h-full max-w-full object-contain pointer-events-none"
+                  className="w-full h-auto object-contain pointer-events-none"
                 />
               </div>
             </Link>
