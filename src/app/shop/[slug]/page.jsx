@@ -70,10 +70,11 @@ export default function ShopDynamicPage() {
         if (categoriesError) refetchCategories();
     };
 
-    // 1. Render Product Details if matched
+    // 1. Render Product Details if matched (key forces instant fresh state per product)
     if (matchedProduct) {
         return (
             <ProductDetailsView
+                key={matchedProduct.id}
                 product={matchedProduct}
                 products={products}
                 categories={categories}
@@ -84,6 +85,7 @@ export default function ShopDynamicPage() {
     // 2. Render Category Grid if matched or treat as category by default
     return (
         <CategoryDetailsView
+            key={rawSlug}
             categorySlug={rawSlug}
             categoryMeta={matchedCategory}
             products={products}

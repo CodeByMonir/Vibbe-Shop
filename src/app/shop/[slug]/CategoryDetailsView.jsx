@@ -307,7 +307,7 @@ export default function CategoryDetailsView({
                                 return (
                                     <div key={p.id} className="group flex flex-col">
                                         {/* Clickable Image Container */}
-                                        <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden mb-3">
+                                        <div className="relative aspect-3/4 w-full bg-[#f4f4f5] overflow-hidden mb-3">
                                             <Link
                                                 href={`/shop/${p.id}`}
                                                 className="block w-full h-full relative"

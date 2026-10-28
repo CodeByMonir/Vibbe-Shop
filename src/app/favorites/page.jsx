@@ -1,20 +1,25 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Trash2, ShoppingBag, ArrowRight, Heart, AlertTriangle, X } from "lucide-react";
 import { useStore } from "@/components/context/StoreContext";
 import LoadingSpinner from "@/components/loading/loading";
 
+// Stable no-op subscriber for client hydration check
+const emptySubscribe = () => () => { };
+
 export default function FavoritesPage() {
   const { favorites, toggleFavorite, clearFavorites, addToCart } = useStore();
-  const [mounted, setMounted] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Hydration-safe mounted check without cascading setState renders
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,  // Client snapshot
+    () => false  // Server snapshot
+  );
 
   const removeItem = (id, e) => {
     if (e) {
@@ -105,7 +110,7 @@ export default function FavoritesPage() {
               {favorites.map((product) => (
                 <div key={product.id} className="group flex flex-col">
                   {/* Clickable Image Container */}
-                  <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden mb-3">
+                  <div className="relative aspect-3/4 w-full bg-[#f4f4f5] overflow-hidden mb-3">
                     <Link
                       href={`/shop/${product.id}`}
                       className="block w-full h-full relative"
@@ -191,7 +196,7 @@ export default function FavoritesPage() {
                             : "bg-[#f4f4f5] text-[#9ca3af] border-[#e5e7eb] cursor-not-allowed"
                           }`}
                       >
-                        <ShoppingBag className="w-3 h-3" />
+                        <ShoppingBag className="w-3 dot-3" />
                         <span>{product.inStock !== false ? "Move to Bag" : "Out of Stock"}</span>
                       </button>
                     </div>

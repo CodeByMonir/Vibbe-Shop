@@ -15,13 +15,15 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 const FREE_SHIPPING_THRESHOLD = 1500; // Free shipping threshold in BDT (৳)
 
+// Stable no-op subscriber for the external store hook
+const emptySubscribe = () => () => { };
+
 export default function CartPage() {
   const { cart, removeFromCart, updateCartQuantity, clearCart } = useStore();
-  const [mounted, setMounted] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [deliveryArea, setDeliveryArea] = useState("dhaka"); // 'dhaka' (৳70) or 'outside' (৳130)
@@ -30,12 +32,15 @@ export default function CartPage() {
   const [couponError, setCouponError] = useState("");
   const [couponSuccess, setCouponSuccess] = useState("");
 
-  // Prevent SSR hydration mismatch when reading localStorage state
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Hydration-safe mounted check without cascading setState renders
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,  // Client snapshot
+    () => false  // Server snapshot
+  );
+  const emptyCart = [];
 
-  const displayedCart = mounted ? cart : [];
+  const displayedCart = mounted ? cart : emptyCart;
 
   // Subtotal Calculation
   const subtotal = useMemo(() => {
@@ -156,7 +161,7 @@ export default function CartPage() {
                 {displayedCart.map((item) => (
                   <div key={`${item.id}-${item.size}`} className="py-6 flex gap-4 sm:gap-6">
                     {/* Item Image */}
-                    <div className="relative aspect-[3/4] w-24 sm:w-28 bg-[#f4f4f5] shrink-0 overflow-hidden">
+                    <div className="relative aspect-3/4 w-24 sm:w-28 bg-[#f4f4f5] shrink-0 overflow-hidden">
                       <Image
                         src={item.image}
                         alt={item.name}

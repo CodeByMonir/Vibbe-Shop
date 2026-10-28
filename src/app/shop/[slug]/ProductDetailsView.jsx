@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,6 @@ import {
     Check,
     ChevronDown,
     X,
-    AlertCircle,
     ArrowLeft,
 } from "lucide-react";
 import { useStore } from "@/components/context/StoreContext";
@@ -42,10 +41,25 @@ export default function ProductDetailsView({ product, products, categories }) {
     const router = useRouter();
     const { cart, addToCart, removeFromCart, toggleFavorite, isFavorite } = useStore();
 
+    // Check if this product is already in the cart to populate initial values
+    const existingInCart = useMemo(() => {
+        if (!product || !Array.isArray(cart)) return null;
+        return cart.find((item) => String(item.id) === String(product.id)) || null;
+    }, [cart, product]);
+
+    // Initial state setup (React initializes fresh on every product change because of key={matchedProduct.id})
     const [selectedImage, setSelectedImage] = useState(0);
-    const [selectedSize, setSelectedSize] = useState("");
-    const [selectedColor, setSelectedColor] = useState("");
-    const [quantity, setQuantity] = useState(1);
+    const [selectedSize, setSelectedSize] = useState(
+        existingInCart?.size ||
+        (Array.isArray(product?.sizes) && product?.sizes[0] ? product.sizes[0] : "")
+    );
+    const [selectedColor, setSelectedColor] = useState(
+        existingInCart?.color ||
+        (Array.isArray(product?.colors) && product?.colors[0]
+            ? product.colors[0]
+            : product?.color || "")
+    );
+    const [quantity, setQuantity] = useState(Number(existingInCart?.quantity) || 1);
     const [sizeError, setSizeError] = useState(false);
 
     const [openAccordion, setOpenAccordion] = useState("details");
@@ -59,32 +73,9 @@ export default function ProductDetailsView({ product, products, categories }) {
         return imgs.filter(Boolean);
     }, [product]);
 
-    // Restore existing selections from StoreContext if already in cart
-    useEffect(() => {
-        setSelectedImage(0);
-        setSizeError(false);
-
-        const existingInCart = Array.isArray(cart)
-            ? cart.find((item) => String(item.id) === String(product.id))
-            : null;
-
-        if (existingInCart) {
-            setSelectedSize(existingInCart.size || "");
-            setSelectedColor(existingInCart.color || "");
-            setQuantity(Number(existingInCart.quantity) || 1);
-        } else {
-            setSelectedSize(Array.isArray(product.sizes) && product.sizes[0] ? product.sizes[0] : "");
-            setSelectedColor(
-                Array.isArray(product.colors) && product.colors[0]
-                    ? product.colors[0]
-                    : product.color || ""
-            );
-            setQuantity(1);
-        }
-    }, [product?.id]);
-
     const targetSize = selectedSize || product?.selectedSize || "Standard";
 
+    // Detect if the specific variant configuration is in the cart
     const currentCartItem = useMemo(() => {
         if (!product || !Array.isArray(cart)) return null;
         return (
@@ -98,13 +89,6 @@ export default function ProductDetailsView({ product, products, categories }) {
     }, [cart, product, targetSize, selectedColor]);
 
     const isInCart = Boolean(currentCartItem);
-
-    useEffect(() => {
-        if (currentCartItem) {
-            setQuantity(Number(currentCartItem.quantity) || 1);
-        }
-    }, [currentCartItem]);
-
     const favoriteActive = isFavorite(product.id);
 
     const relatedProducts = useMemo(() => {
@@ -197,8 +181,7 @@ export default function ProductDetailsView({ product, products, categories }) {
             ? [product.color]
             : [];
 
-    const activeCategoryHref =
-        product.categoryHref;
+    const activeCategoryHref = product.categoryHref;
 
     return (
         <div className="min-h-screen bg-[#ffffff] text-[#111827] font-sans selection:bg-[#000000] selection:text-white">
@@ -224,8 +207,8 @@ export default function ProductDetailsView({ product, products, categories }) {
                                     key={cat.id}
                                     href={cat.href}
                                     className={`px-3 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors shrink-0 ${isActive
-                                            ? "bg-[#000000] text-white"
-                                            : "bg-[#ffffff] text-[#71717A] border border-[#e5e7eb] hover:border-[#000000] hover:text-[#000000]"
+                                        ? "bg-[#000000] text-white"
+                                        : "bg-[#ffffff] text-[#71717A] border border-[#e5e7eb] hover:border-[#000000] hover:text-[#000000]"
                                         }`}
                                 >
                                     {cat.name}
@@ -265,9 +248,9 @@ export default function ProductDetailsView({ product, products, categories }) {
                                         key={idx}
                                         type="button"
                                         onClick={() => setSelectedImage(idx)}
-                                        className={`relative w-16 sm:w-20 aspect-[3/4] bg-[#f4f4f5] border transition-all cursor-pointer ${selectedImage === idx
-                                                ? "border-[#000000] ring-1 ring-[#000000]"
-                                                : "border-[#e5e7eb] opacity-70 hover:opacity-100"
+                                        className={`relative w-16 sm:w-20 aspect-3/4 bg-[#f4f4f5] border transition-all cursor-pointer ${selectedImage === idx
+                                            ? "border-[#000000] ring-1 ring-[#000000]"
+                                            : "border-[#e5e7eb] opacity-70 hover:opacity-100"
                                             }`}
                                     >
                                         <Image
@@ -282,7 +265,7 @@ export default function ProductDetailsView({ product, products, categories }) {
                             </div>
                         )}
 
-                        <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden">
+                        <div className="relative aspect-3/4 w-full bg-[#f4f4f5] overflow-hidden">
                             <Image
                                 src={currentImageSrc}
                                 alt={product.name}
@@ -375,8 +358,8 @@ export default function ProductDetailsView({ product, products, categories }) {
                                                 type="button"
                                                 onClick={() => handleColorSelect(c)}
                                                 className={`group relative flex items-center justify-center w-8 h-8 rounded-full border transition-all cursor-pointer ${isSelected
-                                                        ? "ring-2 ring-[#000000] ring-offset-2 border-transparent"
-                                                        : "border-[#e5e7eb] hover:scale-105"
+                                                    ? "ring-2 ring-[#000000] ring-offset-2 border-transparent"
+                                                    : "border-[#e5e7eb] hover:scale-105"
                                                     }`}
                                             >
                                                 <span
@@ -414,8 +397,8 @@ export default function ProductDetailsView({ product, products, categories }) {
                                                 setSizeError(false);
                                             }}
                                             className={`h-10 min-w-10 px-3.5 text-xs font-bold uppercase border transition-colors cursor-pointer ${selectedSize === s
-                                                    ? "bg-[#000000] text-white border-[#000000]"
-                                                    : "bg-white text-[#111111] border-[#e5e7eb] hover:border-[#000000]"
+                                                ? "bg-[#000000] text-white border-[#000000]"
+                                                : "bg-white text-[#111111] border-[#e5e7eb] hover:border-[#000000]"
                                                 }`}
                                         >
                                             {s}
@@ -465,10 +448,10 @@ export default function ProductDetailsView({ product, products, categories }) {
                                 onClick={handleCartToggle}
                                 disabled={product.inStock === false}
                                 className={`w-full h-12 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors border ${product.inStock === false
-                                        ? "bg-[#f4f4f5] text-[#9ca3af] border-[#e5e7eb] cursor-not-allowed"
-                                        : isInCart
-                                            ? "bg-[#ffffff] text-[#d95338] border-[#d95338] hover:bg-[#fff5f5] cursor-pointer"
-                                            : "bg-[#000000] text-white border-[#000000] hover:bg-[#222222] cursor-pointer"
+                                    ? "bg-[#f4f4f5] text-[#9ca3af] border-[#e5e7eb] cursor-not-allowed"
+                                    : isInCart
+                                        ? "bg-[#ffffff] text-[#d95338] border-[#d95338] hover:bg-[#fff5f5] cursor-pointer"
+                                        : "bg-[#000000] text-white border-[#000000] hover:bg-[#222222] cursor-pointer"
                                     }`}
                             >
                                 {product.inStock === false ? (
@@ -491,8 +474,8 @@ export default function ProductDetailsView({ product, products, categories }) {
                                 onClick={handleDirectCheckout}
                                 disabled={product.inStock === false}
                                 className={`w-full h-12 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors shadow-sm ${product.inStock === false
-                                        ? "hidden"
-                                        : "bg-[#111111] text-white hover:bg-[#000000] cursor-pointer"
+                                    ? "hidden"
+                                    : "bg-[#111111] text-white hover:bg-[#000000] cursor-pointer"
                                     }`}
                             >
                                 <Zap className="w-4 h-4 fill-current text-[#facc15]" />
@@ -516,9 +499,9 @@ export default function ProductDetailsView({ product, products, categories }) {
                                 </button>
                                 {openAccordion === "details" && (
                                     <div className="pt-3 text-[#555555] space-y-1.5 leading-relaxed">
-                                        <p>• 260+ GSM Heavyweight Combed Cotton / French Terry</p>
-                                        <p>• Drop-shoulder structure with reinforced neckline binding</p>
-                                        <p>• Pre-shrunk finish for reliable form retention through washes</p>
+                                        <p>260+ GSM Heavyweight Combed Cotton / French Terry</p>
+                                        <p>Drop-shoulder structure with reinforced neckline binding</p>
+                                        <p>Pre-shrunk finish for reliable form retention through washes</p>
                                     </div>
                                 )}
                             </div>
@@ -537,9 +520,9 @@ export default function ProductDetailsView({ product, products, categories }) {
                                 </button>
                                 {openAccordion === "shipping" && (
                                     <div className="pt-3 text-[#555555] space-y-1.5 leading-relaxed">
-                                        <p>• Inside Dhaka: ৳70 (48-72 hours via Pathao / Steadfast)</p>
-                                        <p>• Outside Dhaka: ৳130 (3-5 business days)</p>
-                                        <p>• Free shipping applied automatically on all orders over ৳1,500</p>
+                                        <p>Inside Dhaka: ৳70 (48-72 hours via Pathao / Steadfast)</p>
+                                        <p>Outside Dhaka: ৳130 (3-5 business days)</p>
+                                        <p>Free shipping applied automatically on all orders over ৳1,500</p>
                                     </div>
                                 )}
                             </div>
@@ -588,7 +571,7 @@ export default function ProductDetailsView({ product, products, categories }) {
                                 const relFav = isFavorite(rel.id);
                                 return (
                                     <div key={rel.id} className="group flex flex-col">
-                                        <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden mb-2.5">
+                                        <div className="relative aspect-3/4 w-full bg-[#f4f4f5] overflow-hidden mb-2.5">
                                             <Link href={`/shop/${rel.id}`} className="block w-full h-full relative">
                                                 <Image
                                                     src={rel.image}
@@ -666,8 +649,8 @@ export default function ProductDetailsView({ product, products, categories }) {
                                 type="button"
                                 onClick={() => setSizeUnit("in")}
                                 className={`px-2 py-0.5 text-[10px] font-bold uppercase border cursor-pointer ${sizeUnit === "in"
-                                        ? "bg-[#000000] text-white border-[#000000]"
-                                        : "bg-white text-[#444444] border-[#e5e7eb]"
+                                    ? "bg-[#000000] text-white border-[#000000]"
+                                    : "bg-white text-[#444444] border-[#e5e7eb]"
                                     }`}
                             >
                                 Inches
@@ -676,8 +659,8 @@ export default function ProductDetailsView({ product, products, categories }) {
                                 type="button"
                                 onClick={() => setSizeUnit("cm")}
                                 className={`px-2 py-0.5 text-[10px] font-bold uppercase border cursor-pointer ${sizeUnit === "cm"
-                                        ? "bg-[#000000] text-white border-[#000000]"
-                                        : "bg-white text-[#444444] border-[#e5e7eb]"
+                                    ? "bg-[#000000] text-white border-[#000000]"
+                                    : "bg-white text-[#444444] border-[#e5e7eb]"
                                     }`}
                             >
                                 CM

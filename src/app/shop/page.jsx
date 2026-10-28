@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useMemo, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -49,20 +49,12 @@ function SearchContent() {
   }, [rawCategories]);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategoryState, setSelectedCategory] = useState(null);
+  const selectedCategory = selectedCategoryState ?? (categoryFromUrl || "All");
   const [selectedSize, setSelectedSize] = useState("All");
   const [sortBy, setSortBy] = useState("featured");
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
   const [addedItemNotice, setAddedItemNotice] = useState(null);
-
-  // Sync category from URL parameter whenever URL changes
-  useEffect(() => {
-    if (categoryFromUrl) {
-      setSelectedCategory(categoryFromUrl);
-    } else {
-      setSelectedCategory("All");
-    }
-  }, [categoryFromUrl]);
 
   const handleQuickAdd = (product, e) => {
     if (e) {
@@ -149,8 +141,8 @@ function SearchContent() {
               href="/shop"
               onClick={() => setSelectedCategory("All")}
               className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider shrink-0 pr-2 border-r border-[#e5e7eb] transition-colors ${selectedCategory === "All"
-                  ? "text-[#000000]"
-                  : "text-[#71717A] hover:text-[#000000]"
+                ? "text-[#000000]"
+                : "text-[#71717A] hover:text-[#000000]"
                 }`}
             >
               <span>Vibbe Items</span>
@@ -166,8 +158,8 @@ function SearchContent() {
                   key={cat.id || cat.href}
                   href={cat.href}
                   className={`px-3 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors shrink-0 ${isActive
-                      ? "bg-[#000000] text-white"
-                      : "bg-[#ffffff] text-[#71717A] border border-[#e5e7eb] hover:border-[#000000] hover:text-[#000000]"
+                    ? "bg-[#000000] text-white"
+                    : "bg-[#ffffff] text-[#71717A] border border-[#e5e7eb] hover:border-[#000000] hover:text-[#000000]"
                     }`}
                 >
                   {cat.name}
@@ -361,7 +353,7 @@ function SearchContent() {
                 return (
                   <div key={product.id} className="group flex flex-col">
                     {/* Clickable Image Container */}
-                    <div className="relative aspect-[3/4] w-full bg-[#f4f4f5] overflow-hidden mb-3">
+                    <div className="relative aspect-3/4 w-full bg-[#f4f4f5] overflow-hidden mb-3">
                       <Link
                         href={`/shop/${product.id}`}
                         className="block w-full h-full relative"
@@ -387,8 +379,8 @@ function SearchContent() {
                         onClick={(e) => handleToggleWishlist(product, e)}
                         aria-label={favoriteActive ? "Remove from wishlist" : "Add to wishlist"}
                         className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center transition-colors shadow-sm ${favoriteActive
-                            ? "text-[#d95338]"
-                            : "text-[#111111] hover:text-[#d95338]"
+                          ? "text-[#d95338]"
+                          : "text-[#111111] hover:text-[#d95338]"
                           }`}
                       >
                         <Heart
