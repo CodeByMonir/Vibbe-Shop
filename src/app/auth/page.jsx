@@ -13,9 +13,8 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
-
-import { signIn, authClient } from "../lib/auth-client";
 import { useAuth } from "@/components/context/AuthContext";
+import { authClient, signIn } from "../lib/auth-client";
 
 const INITIAL_MODAL_STATE = {
   show: false,
@@ -294,7 +293,7 @@ export default function AuthPage() {
 
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-gray-300/40 rounded-full blur-3xl" />
 
-        <div className="relative w-[340px] h-[340px] sm:w-[540px] sm:h-[540px] opacity-[0.05] select-none">
+        <div className="relative w-85 h-85 sm:w-135 sm:h-135 opacity-[0.05] select-none">
           <Image
             src="/img/logo/vibbeLogo.png"
             alt=""
