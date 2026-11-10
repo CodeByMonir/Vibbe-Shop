@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/components/context/AuthContext";
-import { authClient, signIn } from "../lib/auth-client";
+import { authClient, signIn } from "@/lib/auth-client";
 
 const INITIAL_MODAL_STATE = {
   show: false,

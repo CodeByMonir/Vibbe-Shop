@@ -7,36 +7,35 @@ if (!uri) {
 	throw new Error("Missing MONGO_DB_URI in environment variables.");
 }
 
+// 1. Maintain a single MongoClient instance across hot reloads in development
 let client;
-let clientPromise;
 
 if (process.env.NODE_ENV === "development") {
-	if (!global._mongoClientPromise) {
-		client = new MongoClient(uri);
-		global._mongoClientPromise = client.connect();
+	if (!global._mongoClient) {
+		global._mongoClient = new MongoClient(uri);
 	}
-	clientPromise = global._mongoClientPromise;
+	client = global._mongoClient;
 } else {
 	client = new MongoClient(uri);
-	clientPromise = client.connect();
 }
 
+// 2. Obtain the database reference from the resolved client instance
 const db = client.db(process.env.AUTH_DB_NAME);
 
+// 3. Configure Better Auth
 export const auth = betterAuth({
 	secret: process.env.BETTER_AUTH_SECRET,
 	baseURL: process.env.BASE_URL,
 	basePath: "/api/auth",
 	emailAndPassword: {
 		enabled: true,
-		// autoSignIn: true,
 	},
 	socialProviders: {
 		google: {
-			clientId: process.env.GOOGLE_CLIENT_ID,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+			clientId: process.env.GOOGLE_CLIENT_ID || "",
+			clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
 		},
-	}, // Define custom user schema fields and defaults
+	},
 	user: {
 		additionalFields: {
 			role: {
@@ -47,7 +46,6 @@ export const auth = betterAuth({
 			},
 		},
 	},
-	database: mongodbAdapter(db, {
-		client,
-	}),
+	// Pass the db instance directly into the adapter
+	database: mongodbAdapter(db),
 });
