@@ -143,7 +143,7 @@ export default function DashboardSidebar() {
 						>
 							<div className="relative w-8 h-8 shrink-0 overflow-hidden">
 								<Image
-									src="/public/img/logo/vibbeLogo.png"
+									src="/img/logo/vibbeLogo.png"
 									alt="Vibbe"
 									fill
 									sizes="32px"
@@ -159,7 +159,7 @@ export default function DashboardSidebar() {
 						>
 							<div className="relative w-8 h-8 shrink-0 overflow-hidden">
 								<Image
-									src="/logo.png"
+									src="/img/logo/vibbeLogo.png"
 									alt="Vibbe"
 									fill
 									sizes="32px"
