@@ -5,36 +5,31 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const SLIDES = [
-    {
-        id: 1,
-        title: "Minimalist Tokyo Oversized Tee",
-        image:
-            "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=1800&q=85",
-    },
-    {
-        id: 2,
-        title: "Cuban Collar Textured Resort Shirt",
-        image:
-            "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=1800&q=85",
-    },
-    {
-        id: 3,
-        title: "Relaxed Wide-Leg Pleated Trousers",
-        image:
-            "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=1800&q=85",
-    },
-    {
-        id: 4,
-        title: "Distressed Monochrome Trucker Jacket",
-        image:
-            "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1800&q=85",
-    },
-    {
-        id: 5,
-        title: "Raw Edge Utility Cargo Pant",
-        image:
-            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1800&q=85",
-    },
+	{
+		id: 1,
+		title: "Minimalist Tokyo Oversized Tee",
+		image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=1800&q=85",
+	},
+	{
+		id: 2,
+		title: "Cuban Collar Textured Resort Shirt",
+		image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=1800&q=85",
+	},
+	{
+		id: 3,
+		title: "Relaxed Wide-Leg Pleated Trousers",
+		image: "/img/hero/bg1.jpg",
+	},
+	{
+		id: 4,
+		title: "Distressed Monochrome Trucker Jacket",
+		image: "/img/hero/bg2.jpg",
+	},
+	{
+		id: 5,
+		title: "Raw Edge Utility Cargo Pant",
+		image: "/img/hero/bg3.jpg",
+	},
 ];
 
 const variants = {

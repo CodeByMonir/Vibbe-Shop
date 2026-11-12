@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
 	LayoutDashboard,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { authClient } from "@/lib/auth-client";
+import { redirect, usePathname } from "next/navigation";
 
 // Role-specific navigation registry
 const ROLE_NAV_CONFIG = {
@@ -118,7 +118,8 @@ export default function DashboardSidebar() {
 	const handleSignOut = async () => {
 		try {
 			await authClient.signOut();
-			redirect("/login");
+			// window.location.href = "/auth";
+			redirect("/auth");
 		} catch (err) {
 			console.error("Sign out error:", err);
 		}
@@ -128,7 +129,7 @@ export default function DashboardSidebar() {
 		<motion.aside
 			animate={{ width: collapsed ? 80 : 260 }}
 			transition={{ duration: 0.22, ease: "easeInOut" }}
-			className="relative flex flex-col justify-between h-screen sticky top-0 border-r border-white/60 bg-white/75 backdrop-blur-xl shadow-[4px_0_24px_0_rgba(0,0,0,0.02)] z-30 select-none shrink-0 max-md:!w-16"
+			className="relative flex flex-col justify-between h-screen sticky top-0 border-r border-white/60 bg-white/75 backdrop-blur-xl shadow-[4px_0_24px_0_rgba(0,0,0,0.02)] z-30 select-none shrink-0 max-md:w-16!"
 		>
 			{/* Top Section */}
 			<div>
@@ -214,7 +215,7 @@ export default function DashboardSidebar() {
 										}`}
 									/>
 									<span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-										{currentRole}
+										{user?.email || "example@gmail.com"}
 									</span>
 								</div>
 							</div>

@@ -1,0 +1,103 @@
+[
+	{
+		"id": "VB-9042",
+		"date": "Nov 08, 2026",
+		"status": "recheived",
+		"paymentMethod": "Paid",
+		"shippingAddress": "House 14, Road 7, Dhanmondi, Dhaka",
+		"subtotal": 4700,
+		"shipping": "free",
+		"total": 4700,
+		"trackingNumber": "BDX-88492014",
+		"items": [
+			{
+				"name": "Oversized Heavyweight Box Tee",
+				"variant": "Obsidian Black / L",
+				"qty": 1,
+				"price": 2200
+			},
+			{
+				"name": "Washed Cargo Utility Shorts",
+				"variant": "Slate Grey / 32",
+				"qty": 1,
+				"price": 2500
+			}
+		]
+	},
+	{
+		"id": "VB-8991",
+		"date": "Oct 27, 2026",
+		"status": "confirmed",
+		"paymentMethod": "Paid",
+		"shippingAddress": "House 14, Road 7, Dhanmondi, Dhaka",
+		"subtotal": 6200,
+		"shipping": "free",
+		"total": 6200,
+		"trackingNumber": "BDX-88410982",
+		"items": [
+			{
+				"name": "Minimalist Full-Grain Leather Crossbody",
+				"variant": "Matte Black / One Size",
+				"qty": 1,
+				"price": 6200
+			}
+		]
+	},
+	{
+		"id": "VB-8955",
+		"date": "Oct 21, 2026",
+		"status": "pending",
+		"paymentMethod": "COD",
+		"shippingAddress": "Flat 4B, Sector 11, Uttara, Dhaka",
+		"subtotal": 5400,
+		"shipping": "free",
+		"total": 5400,
+		"trackingNumber": "Pending Dispatch",
+		"items": [
+			{
+				"name": "Structured Wool Blend Overshirt",
+				"variant": "Charcoal / M",
+				"qty": 1,
+				"price": 5400
+			}
+		]
+	},
+	{
+		"id": "VB-8914",
+		"date": "Oct 14, 2026",
+		"status": "recheived",
+		"paymentMethod": "Paid",
+		"shippingAddress": "House 14, Road 7, Dhanmondi, Dhaka",
+		"subtotal": 3450,
+		"shipping": "free",
+		"total": 3450,
+		"trackingNumber": "BDX-88294410",
+		"items": [
+			{
+				"name": "Relaxed Tapered Pleated Trousers",
+				"variant": "Stone / 32",
+				"qty": 1,
+				"price": 3450
+			}
+		]
+	},
+	{
+		"id": "VB-8803",
+		"date": "Sep 29, 2026",
+		"status": "cancelled",
+		"paymentMethod": "COD",
+		"shippingAddress": "House 14, Road 7, Dhanmondi, Dhaka",
+		"subtotal": 2900,
+		"shipping": "free",
+		"total": 2900,
+		"trackingNumber": "Cancelled before dispatch",
+		"items": [
+			{
+				"name": "Ribbed Merino Beanie & Scarf Set",
+				"variant": "Heather Grey",
+				"qty": 1,
+				"price": 2900
+			}
+		]
+	}
+]

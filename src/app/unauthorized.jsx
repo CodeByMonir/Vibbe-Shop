@@ -90,7 +90,7 @@ export default function UnauthorizedPage() {
 
 						{!isAuthenticated ? (
 							<Link
-								href="/login"
+								href="/auth"
 								className="flex items-center justify-center gap-2 py-2.5 px-3 border border-neutral-200 hover:bg-neutral-100 text-neutral-700 text-xs font-bold uppercase tracking-wider transition-colors"
 							>
 								<LogIn className="w-3.5 h-3.5" />
